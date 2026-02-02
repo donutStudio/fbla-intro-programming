@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react"
+import React, { useState } from "react";
 
 import { usePetStore } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useState } from "react";
+import { toast } from "sonner";
+import { FOOD_OPTIONS, TOY_OPTIONS, CLEANING_COST, VET_COST } from "@/lib/domain/petRules";
 
 interface ActionButtonProps {
   icon: React.ReactNode;
@@ -31,6 +32,7 @@ interface ActionButtonProps {
   onClick: () => void;
   cost?: number;
   disabled?: boolean;
+  disabledReason?: string;
   variant?: "default" | "secondary" | "outline";
 }
 
@@ -40,21 +42,27 @@ function ActionButton({
   onClick,
   cost,
   disabled,
+  disabledReason,
   variant = "secondary",
 }: ActionButtonProps) {
   return (
-    <Button
-      variant={variant}
-      className="h-auto flex-col gap-1 p-3 transition-all hover:scale-105 active:scale-95"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <span className="text-lg">{icon}</span>
-      <span className="text-xs font-medium">{label}</span>
-      {cost !== undefined && (
-        <span className="text-[10px] text-muted-foreground">${cost}</span>
+    <div className="space-y-1 text-center">
+      <Button
+        variant={variant}
+        className="h-auto w-full flex-col gap-1 p-3 transition-all hover:scale-105 active:scale-95"
+        onClick={onClick}
+        disabled={disabled}
+      >
+        <span className="text-lg">{icon}</span>
+        <span className="text-xs font-medium">{label}</span>
+        {cost !== undefined && (
+          <span className="text-[10px] text-muted-foreground">${cost}</span>
+        )}
+      </Button>
+      {disabled && disabledReason && (
+        <p className="text-[10px] text-muted-foreground">{disabledReason}</p>
       )}
-    </Button>
+    </div>
   );
 }
 
@@ -68,12 +76,22 @@ export function PetActions({ onInteraction }: PetActionsProps) {
   const [feedOpen, setFeedOpen] = useState(false);
   const [playOpen, setPlayOpen] = useState(false);
 
-  const handleAction = (action: () => void) => {
-    action();
-    onInteraction();
+  const handleAction = (action: () => { ok: boolean; message: string }) => {
+    const result = action();
+    if (result.ok) {
+      toast.success(result.message);
+      onInteraction();
+    } else {
+      toast.error(result.message);
+    }
   };
 
   if (!pet) return null;
+
+  const playDisabledReason = pet.energy < 20 ? "Too tired" : undefined;
+  const restDisabledReason = pet.energy > 95 ? "Already rested" : undefined;
+  const cleanDisabledReason = pet.cleanliness > 95 ? "Already clean" : balance < CLEANING_COST ? `Need $${CLEANING_COST}` : undefined;
+  const vetDisabledReason = pet.health > 95 ? "Health already high" : balance < VET_COST ? `Need $${VET_COST}` : undefined;
 
   return (
     <Card className="w-full">
@@ -84,7 +102,7 @@ export function PetActions({ onInteraction }: PetActionsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {/* Feed Popover */}
           <Popover open={feedOpen} onOpenChange={setFeedOpen}>
             <PopoverTrigger asChild>
@@ -96,56 +114,48 @@ export function PetActions({ onInteraction }: PetActionsProps) {
                 <span className="text-xs font-medium">Feed</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-2">
+            <PopoverContent className="w-56 p-2">
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium px-2">
                   Choose food:
                 </p>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => feedPet("basic"));
-                    setFeedOpen(false);
-                  }}
-                  disabled={balance < 5}
-                >
-                  <Salad className="h-4 w-4 text-green-500" />
-                  <span>Basic</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $5
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => feedPet("premium"));
-                    setFeedOpen(false);
-                  }}
-                  disabled={balance < 15}
-                >
-                  <Apple className="h-4 w-4 text-red-500" />
-                  <span>Premium</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $15
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => feedPet("treat"));
-                    setFeedOpen(false);
-                  }}
-                  disabled={balance < 8}
-                >
-                  <Cookie className="h-4 w-4 text-amber-500" />
-                  <span>Treat</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $8
-                  </span>
-                </Button>
+                {(Object.keys(FOOD_OPTIONS) as Array<keyof typeof FOOD_OPTIONS>).map(
+                  (foodType) => {
+                    const option = FOOD_OPTIONS[foodType];
+                    const disabled = balance < option.cost;
+                    return (
+                      <Button
+                        key={foodType}
+                        variant="ghost"
+                        className="w-full justify-start gap-2 h-10"
+                        onClick={() => {
+                          handleAction(() => feedPet(foodType));
+                          setFeedOpen(false);
+                        }}
+                        disabled={disabled}
+                      >
+                        {foodType === "basic" && (
+                          <Salad className="h-4 w-4 text-green-500" />
+                        )}
+                        {foodType === "premium" && (
+                          <Apple className="h-4 w-4 text-red-500" />
+                        )}
+                        {foodType === "treat" && (
+                          <Cookie className="h-4 w-4 text-amber-500" />
+                        )}
+                        <span>{option.label}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          ${option.cost}
+                        </span>
+                        {disabled && (
+                          <span className="ml-2 text-[10px] text-red-500">
+                            Need ${option.cost}
+                          </span>
+                        )}
+                      </Button>
+                    );
+                  }
+                )}
               </div>
             </PopoverContent>
           </Popover>
@@ -162,56 +172,50 @@ export function PetActions({ onInteraction }: PetActionsProps) {
                 <span className="text-xs font-medium">Play</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-2">
+            <PopoverContent className="w-56 p-2">
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium px-2">
                   Choose activity:
                 </p>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => playWithPet("ball"));
-                    setPlayOpen(false);
-                  }}
-                  disabled={balance < 10}
-                >
-                  <Circle className="h-4 w-4 text-blue-500" />
-                  <span>Ball</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $10
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => playWithPet("puzzle"));
-                    setPlayOpen(false);
-                  }}
-                  disabled={balance < 25}
-                >
-                  <Puzzle className="h-4 w-4 text-purple-500" />
-                  <span>Puzzle</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $25
-                  </span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-2 h-9"
-                  onClick={() => {
-                    handleAction(() => playWithPet("fetch"));
-                    setPlayOpen(false);
-                  }}
-                  disabled={balance < 15}
-                >
-                  <Dog className="h-4 w-4 text-amber-600" />
-                  <span>Fetch</span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    $15
-                  </span>
-                </Button>
+                {(Object.keys(TOY_OPTIONS) as Array<keyof typeof TOY_OPTIONS>).map(
+                  (toyType) => {
+                    const option = TOY_OPTIONS[toyType];
+                    const disabled = balance < option.cost || pet.energy < 20;
+                    const disabledMessage =
+                      pet.energy < 20 ? "Too tired" : `Need $${option.cost}`;
+                    return (
+                      <Button
+                        key={toyType}
+                        variant="ghost"
+                        className="w-full justify-start gap-2 h-10"
+                        onClick={() => {
+                          handleAction(() => playWithPet(toyType));
+                          setPlayOpen(false);
+                        }}
+                        disabled={disabled}
+                      >
+                        {toyType === "ball" && (
+                          <Circle className="h-4 w-4 text-blue-500" />
+                        )}
+                        {toyType === "puzzle" && (
+                          <Puzzle className="h-4 w-4 text-purple-500" />
+                        )}
+                        {toyType === "fetch" && (
+                          <Dog className="h-4 w-4 text-amber-600" />
+                        )}
+                        <span>{option.label}</span>
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          ${option.cost}
+                        </span>
+                        {disabled && (
+                          <span className="ml-2 text-[10px] text-red-500">
+                            {disabledMessage}
+                          </span>
+                        )}
+                      </Button>
+                    );
+                  }
+                )}
               </div>
             </PopoverContent>
           </Popover>
@@ -221,6 +225,8 @@ export function PetActions({ onInteraction }: PetActionsProps) {
             icon={<Moon className="h-5 w-5 text-indigo-500" />}
             label="Rest"
             onClick={() => handleAction(restPet)}
+            disabled={pet.energy > 95}
+            disabledReason={restDisabledReason}
           />
 
           {/* Clean */}
@@ -228,8 +234,9 @@ export function PetActions({ onInteraction }: PetActionsProps) {
             icon={<Sparkles className="h-5 w-5 text-cyan-500" />}
             label="Clean"
             onClick={() => handleAction(cleanPet)}
-            cost={5}
-            disabled={balance < 5}
+            cost={CLEANING_COST}
+            disabled={pet.cleanliness > 95 || balance < CLEANING_COST}
+            disabledReason={cleanDisabledReason}
           />
 
           {/* Vet */}
@@ -237,12 +244,13 @@ export function PetActions({ onInteraction }: PetActionsProps) {
             icon={<Stethoscope className="h-5 w-5 text-green-500" />}
             label="Vet"
             onClick={() => handleAction(vetVisit)}
-            cost={50}
-            disabled={balance < 50}
+            cost={VET_COST}
+            disabled={pet.health > 95 || balance < VET_COST}
+            disabledReason={vetDisabledReason}
           />
         </div>
 
-        {pet.energy < 20 && (
+        {playDisabledReason && (
           <p className="text-xs text-muted-foreground mt-3 text-center">
             Your pet is too tired to play. Let them rest first!
           </p>
