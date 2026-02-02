@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { usePetStore, type PetType } from "@/lib/pet-store";
+import {
+  usePetStore,
+  type PetType,
+  type PetAppearance,
+} from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PawPrint, Sparkles } from "lucide-react";
@@ -20,11 +25,22 @@ export function SetupScreen() {
   const [petName, setPetName] = useState("");
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [step, setStep] = useState(1);
+  const [appearance, setAppearance] = useState<PetAppearance>({
+    color: "golden",
+    pattern: "solid",
+    accessory: "none",
+    primaryTrait: "wings",
+    secondaryTrait: "none",
+  });
   const createPet = usePetStore((state) => state.createPet);
+  const avatarMode = usePetStore((state) => state.avatarMode);
+  const setAvatarMode = usePetStore((state) => state.setAvatarMode);
+  const demoMode = usePetStore((state) => state.demoMode);
+  const setDemoMode = usePetStore((state) => state.setDemoMode);
 
   const handleCreate = () => {
     if (petName.trim() && selectedType) {
-      createPet(petName.trim(), selectedType);
+      createPet(petName.trim(), selectedType, appearance);
     }
   };
 
@@ -118,20 +134,237 @@ export function SetupScreen() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="petName">Pet Name</Label>
-                  <Input
-                    id="petName"
-                    placeholder="Enter a name..."
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="petName">Pet Name</Label>
+                    <Input
+                      id="petName"
+                      placeholder="Enter a name..."
                     value={petName}
                     onChange={(e) => setPetName(e.target.value)}
                     className="text-center text-lg"
                     maxLength={20}
-                  />
-                </div>
+                    />
+                  </div>
 
-                <div className="flex gap-2">
+                  <div className="rounded-xl border border-border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Avatar Style
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Switch between dynamic art and classic emoji mode
+                        </p>
+                      </div>
+                      <Switch
+                        checked={avatarMode === "dynamic"}
+                        onCheckedChange={(checked) =>
+                          setAvatarMode(checked ? "dynamic" : "emoji")
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Demo Mode
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Speed up stat decay for presentations
+                        </p>
+                      </div>
+                      <Switch
+                        checked={demoMode}
+                        onCheckedChange={setDemoMode}
+                      />
+                    </div>
+                  </div>
+
+                  {avatarMode === "dynamic" && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Fur color</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { key: "charcoal", label: "Charcoal" },
+                              { key: "golden", label: "Golden" },
+                              { key: "cream", label: "Cream" },
+                              { key: "sky", label: "Sky" },
+                              { key: "rose", label: "Rose" },
+                            ] as Array<{ key: PetAppearance["color"]; label: string }>
+                          ).map((option) => (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs",
+                                appearance.color === option.key
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border"
+                              )}
+                              onClick={() =>
+                                setAppearance((prev) => ({
+                                  ...prev,
+                                  color: option.key,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Pattern</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { key: "solid", label: "Solid" },
+                              { key: "spots", label: "Spots" },
+                              { key: "stripes", label: "Stripes" },
+                              { key: "patches", label: "Patches" },
+                            ] as Array<{ key: PetAppearance["pattern"]; label: string }>
+                          ).map((option) => (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs",
+                                appearance.pattern === option.key
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border"
+                              )}
+                              onClick={() =>
+                                setAppearance((prev) => ({
+                                  ...prev,
+                                  pattern: option.key,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Accessory</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { key: "none", label: "None" },
+                              { key: "bow", label: "Bow" },
+                              { key: "collar", label: "Collar" },
+                              { key: "hat", label: "Hat" },
+                              { key: "bandana", label: "Bandana" },
+                            ] as Array<{ key: PetAppearance["accessory"]; label: string }>
+                          ).map((option) => (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs",
+                                appearance.accessory === option.key
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border"
+                              )}
+                              onClick={() =>
+                                setAppearance((prev) => ({
+                                  ...prev,
+                                  accessory: option.key,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Primary evolution trait (shows from teen)
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { key: "wings", label: "Wings" },
+                              { key: "crown", label: "Crown" },
+                              { key: "cape", label: "Cape" },
+                              { key: "horns", label: "Horns" },
+                              { key: "backpack", label: "Backpack" },
+                              { key: "sparkles", label: "Sparkles" },
+                              { key: "none", label: "None" },
+                            ] as Array<{ key: PetAppearance["primaryTrait"]; label: string }>
+                          ).map((option) => (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs",
+                                appearance.primaryTrait === option.key
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border"
+                              )}
+                              onClick={() =>
+                                setAppearance((prev) => ({
+                                  ...prev,
+                                  primaryTrait: option.key,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Secondary trait (adult bonus)
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { key: "none", label: "None" },
+                              { key: "wings", label: "Wings" },
+                              { key: "crown", label: "Crown" },
+                              { key: "cape", label: "Cape" },
+                              { key: "horns", label: "Horns" },
+                              { key: "backpack", label: "Backpack" },
+                              { key: "sparkles", label: "Sparkles" },
+                            ] as Array<{ key: PetAppearance["secondaryTrait"]; label: string }>
+                          ).map((option) => (
+                            <button
+                              key={option.key}
+                              type="button"
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs",
+                                appearance.secondaryTrait === option.key
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border"
+                              )}
+                              onClick={() =>
+                                setAppearance((prev) => ({
+                                  ...prev,
+                                  secondaryTrait: option.key,
+                                }))
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
                   <Button
                     variant="outline"
                     className="flex-1 bg-transparent"

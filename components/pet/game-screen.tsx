@@ -8,6 +8,7 @@ import { PetActions } from "./pet-actions";
 import { FinancePanel } from "./finance-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,16 +30,25 @@ import {
 } from "@/components/ui/sheet";
 
 export function GameScreen() {
-  const { pet, updatePetStats, resetGame, balance } = usePetStore();
+  const {
+    pet,
+    updatePetStats,
+    resetGame,
+    balance,
+    avatarMode,
+    setAvatarMode,
+    demoMode,
+    setDemoMode,
+  } = usePetStore();
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
   // Update pet stats periodically
   useEffect(() => {
     updatePetStats();
-    const interval = setInterval(updatePetStats, 60000); // Every minute
+    const interval = setInterval(updatePetStats, demoMode ? 10000 : 60000);
     return () => clearInterval(interval);
-  }, [updatePetStats]);
+  }, [updatePetStats, demoMode]);
 
   const handleInteraction = () => {
     setIsInteracting(true);
@@ -63,6 +73,20 @@ export function GameScreen() {
               <span className="font-bold text-foreground">${balance}</span>
             </div>
 
+            <div className="hidden md:flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Dynamic Avatar</span>
+              <Switch
+                checked={avatarMode === "dynamic"}
+                onCheckedChange={(checked) =>
+                  setAvatarMode(checked ? "dynamic" : "emoji")
+                }
+              />
+            </div>
+            <div className="hidden md:flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Demo Mode</span>
+              <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+            </div>
+
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
@@ -78,6 +102,19 @@ export function GameScreen() {
                   </SheetTitle>
                 </SheetHeader>
                 <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span>Dynamic Avatar</span>
+                    <Switch
+                      checked={avatarMode === "dynamic"}
+                      onCheckedChange={(checked) =>
+                        setAvatarMode(checked ? "dynamic" : "emoji")
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span>Demo Mode</span>
+                    <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+                  </div>
                   <FinancePanel />
                 </div>
               </SheetContent>
