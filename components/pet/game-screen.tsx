@@ -11,6 +11,7 @@ import { AnalyticsDashboard } from "./analytics-dashboard";
 import { HelpPanel } from "./help-panel";
 import { AskPetPal } from "./ask-petpal";
 import { AboutPanel } from "./about-panel";
+import { AICustomizer } from "./ai-customizer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -35,6 +36,7 @@ import {
   MessageSquare,
   HelpCircle,
   Sparkles,
+  Wand2,
 } from "lucide-react";
 import {
   Sheet,
@@ -179,6 +181,10 @@ export function GameScreen() {
               <MessageSquare className="h-4 w-4" />
               Ask PetPal
             </TabsTrigger>
+            <TabsTrigger value="customize" className="gap-2">
+              <Wand2 className="h-4 w-4" />
+              Customize
+            </TabsTrigger>
             <TabsTrigger value="help" className="gap-2">
               <HelpCircle className="h-4 w-4" />
               Help
@@ -216,6 +222,10 @@ export function GameScreen() {
 
           <TabsContent value="ask" className="mt-6">
             <AskPetPal />
+          </TabsContent>
+
+          <TabsContent value="customize" className="mt-6">
+            <AICustomizer />
           </TabsContent>
 
           <TabsContent value="help" className="mt-6">

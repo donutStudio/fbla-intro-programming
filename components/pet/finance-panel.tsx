@@ -40,8 +40,10 @@ export function FinancePanel() {
   } = usePetStore();
 
   const [customGoal, setCustomGoal] = useState("");
+  const [goalTouched, setGoalTouched] = useState(false);
   const [taskName, setTaskName] = useState("");
   const [taskReward, setTaskReward] = useState("");
+  const [taskTouched, setTaskTouched] = useState(false);
 
   const savingsProgress = Math.min((balance / savingsGoal) * 100, 100);
   const recentExpenses = expenses.slice(-5).reverse();
@@ -83,6 +85,7 @@ export function FinancePanel() {
     if (result.ok) {
       toast.success(result.message);
       setCustomGoal("");
+      setGoalTouched(false);
     } else {
       toast.error(result.message);
     }
@@ -95,6 +98,7 @@ export function FinancePanel() {
       toast.success(result.message);
       setTaskName("");
       setTaskReward("");
+      setTaskTouched(false);
     } else {
       toast.error(result.message);
     }
@@ -183,9 +187,13 @@ export function FinancePanel() {
               id="custom-goal"
               placeholder="Enter custom goal"
               value={customGoal}
-              onChange={(event) => setCustomGoal(event.target.value)}
+              onChange={(event) => {
+                setCustomGoal(event.target.value);
+                setGoalTouched(true);
+              }}
+              onBlur={() => setGoalTouched(true)}
             />
-            {goalErrors.length > 0 && (
+            {goalTouched && goalErrors.length > 0 && (
               <div className="text-xs text-red-500 space-y-1">
                 {goalErrors.length > 1 && (
                   <p>Please fix the following:</p>
@@ -277,15 +285,23 @@ export function FinancePanel() {
               id="task-name"
               placeholder="Task title"
               value={taskName}
-              onChange={(event) => setTaskName(event.target.value)}
+              onChange={(event) => {
+                setTaskName(event.target.value);
+                setTaskTouched(true);
+              }}
+              onBlur={() => setTaskTouched(true)}
             />
             <Input
               id="task-reward"
               placeholder="Reward amount"
               value={taskReward}
-              onChange={(event) => setTaskReward(event.target.value)}
+              onChange={(event) => {
+                setTaskReward(event.target.value);
+                setTaskTouched(true);
+              }}
+              onBlur={() => setTaskTouched(true)}
             />
-            {taskErrors.length > 0 && (
+            {taskTouched && taskErrors.length > 0 && (
               <div className="text-xs text-red-500 space-y-1">
                 {taskErrors.length > 1 && <p>Please fix the following:</p>}
                 {taskErrors.map((error) => (

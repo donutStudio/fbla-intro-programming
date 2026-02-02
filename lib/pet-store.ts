@@ -41,6 +41,24 @@ export type {
   Task,
 };
 
+export interface ChatMessage {
+  id: string;
+  question: string;
+  response: {
+    title: string;
+    summary: string;
+    tips: string[];
+    recommendations: Array<{
+      action: string;
+      reason: string;
+      impact: string;
+      confidence: number;
+      factors: string[];
+    }>;
+    ml: Record<string, number>;
+  };
+}
+
 interface GameState {
   pet: Pet | null;
   balance: number;
@@ -50,6 +68,7 @@ interface GameState {
   tasks: Task[];
   statsHistory: StatSnapshot[];
   events: PetEvent[];
+  chatMessages: ChatMessage[];
   totalSpent: number;
   totalEarned: number;
   gameStarted: boolean;
@@ -80,6 +99,13 @@ interface PetStore extends GameState {
   updatePetStats: () => void;
   getMood: () => PetMood;
   addEvent: (event: PetEvent) => void;
+  
+  // Chat actions
+  addChatMessage: (message: ChatMessage) => void;
+  clearChatMessages: () => void;
+  
+  // Appearance actions
+  updatePetAppearance: (appearance: Partial<PetAppearance>) => void;
 }
 
 const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt">[] = [
@@ -107,6 +133,7 @@ const initialState: GameState = {
   tasks: buildTaskList(),
   statsHistory: [],
   events: [],
+  chatMessages: [],
   totalSpent: 0,
   totalEarned: 0,
   gameStarted: false,
@@ -460,6 +487,28 @@ export const usePetStore = create<PetStore>()(
 
       addEvent: (event: PetEvent) => {
         set({ events: [...get().events, event] });
+      },
+
+      addChatMessage: (message: ChatMessage) => {
+        set({ chatMessages: [message, ...get().chatMessages] });
+      },
+
+      clearChatMessages: () => {
+        set({ chatMessages: [] });
+      },
+
+      updatePetAppearance: (appearance: Partial<PetAppearance>) => {
+        const state = get();
+        if (!state.pet) return;
+        set({
+          pet: {
+            ...state.pet,
+            appearance: {
+              ...state.pet.appearance,
+              ...appearance,
+            },
+          },
+        });
       },
     }),
     {

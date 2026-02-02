@@ -41,49 +41,47 @@ const MOOD_EXPRESSIONS: Record<PetMood, string> = {
 };
 
 const DEFAULT_APPEARANCE: PetAppearance = {
-  color: "golden",
-  pattern: "solid",
+  color: "rose",
+  eyeStyle: "round",
   accessory: "none",
-  primaryTrait: "wings",
-  secondaryTrait: "none",
+  wingStyle: "none",
 };
 
 const COLOR_MAP: Record<PetAppearance["color"], { base: string; accent: string }> =
   {
-    charcoal: { base: "#1f2937", accent: "#6b7280" },
-    golden: { base: "#f59e0b", accent: "#fcd34d" },
-    cream: { base: "#fef3c7", accent: "#fbbf24" },
-    sky: { base: "#7dd3fc", accent: "#38bdf8" },
     rose: { base: "#fb7185", accent: "#fda4af" },
+    sky: { base: "#7dd3fc", accent: "#38bdf8" },
+    emerald: { base: "#34d399", accent: "#6ee7b7" },
+    amber: { base: "#fbbf24", accent: "#fcd34d" },
+    lavender: { base: "#a78bfa", accent: "#c4b5fd" },
   };
 
-const renderPattern = (pattern: PetAppearance["pattern"], accent: string) => {
-  switch (pattern) {
-    case "spots":
+const renderEyes = (eyeStyle: PetAppearance["eyeStyle"], eyeY: number) => {
+  switch (eyeStyle) {
+    case "sparkle":
       return (
         <>
-          <circle cx="85" cy="120" r="10" fill={accent} opacity="0.7" />
-          <circle cx="120" cy="135" r="8" fill={accent} opacity="0.7" />
-          <circle cx="95" cy="150" r="6" fill={accent} opacity="0.7" />
+          <circle cx="88" cy={eyeY} r="5" fill="#111827" />
+          <circle cx="112" cy={eyeY} r="5" fill="#111827" />
+          <circle cx="90" cy={eyeY - 2} r="2" fill="white" />
+          <circle cx="114" cy={eyeY - 2} r="2" fill="white" />
         </>
       );
-    case "stripes":
+    case "sleepy":
       return (
         <>
-          <rect x="70" y="110" width="6" height="50" fill={accent} opacity="0.7" />
-          <rect x="95" y="105" width="6" height="60" fill={accent} opacity="0.7" />
-          <rect x="120" y="112" width="6" height="48" fill={accent} opacity="0.7" />
+          <path d={`M83 ${eyeY} Q88 ${eyeY + 3} 93 ${eyeY}`} stroke="#111827" strokeWidth="3" fill="none" />
+          <path d={`M107 ${eyeY} Q112 ${eyeY + 3} 117 ${eyeY}`} stroke="#111827" strokeWidth="3" fill="none" />
         </>
       );
-    case "patches":
-      return (
-        <>
-          <ellipse cx="85" cy="135" rx="18" ry="12" fill={accent} opacity="0.7" />
-          <ellipse cx="120" cy="120" rx="14" ry="10" fill={accent} opacity="0.7" />
-        </>
-      );
+    case "round":
     default:
-      return null;
+      return (
+        <>
+          <circle cx="88" cy={eyeY} r="4" fill="#111827" />
+          <circle cx="112" cy={eyeY} r="4" fill="#111827" />
+        </>
+      );
   }
 };
 
@@ -118,52 +116,28 @@ const renderAccessory = (accessory: PetAppearance["accessory"]) => {
   }
 };
 
-const renderTrait = (trait: PetAppearance["primaryTrait"], evolution: PetEvolution) => {
-  if (trait === "none" || evolution === "baby") return null;
-  switch (trait) {
-    case "wings":
+const renderWings = (wingStyle: PetAppearance["wingStyle"], evolution: PetEvolution) => {
+  if (wingStyle === "none" || evolution === "baby") return null;
+  switch (wingStyle) {
+    case "angel":
       return (
         <>
           <ellipse cx="50" cy="120" rx="20" ry="30" fill="#e5e7eb" opacity="0.8" />
           <ellipse cx="150" cy="120" rx="20" ry="30" fill="#e5e7eb" opacity="0.8" />
         </>
       );
-    case "crown":
-      return (
-        <polygon
-          points="85,60 95,40 105,60 120,45 115,70 85,70 80,45"
-          fill="#facc15"
-        />
-      );
-    case "cape":
-      return <path d="M70 125 L130 125 L155 175 L45 175 Z" fill="#2563eb" opacity="0.8" />;
-    case "horns":
+    case "fairy":
       return (
         <>
-          <polygon points="78,70 70,40 90,55" fill="#9ca3af" />
-          <polygon points="122,70 130,40 110,55" fill="#9ca3af" />
-        </>
-      );
-    case "backpack":
-      return <rect x="65" y="120" width="15" height="25" rx="4" fill="#10b981" />;
-    case "sparkles":
-      return (
-        <>
-          <polygon points="60,100 65,90 70,100 65,110" fill="#fcd34d" />
-          <polygon points="140,95 145,85 150,95 145,105" fill="#fcd34d" />
+          <ellipse cx="55" cy="115" rx="18" ry="25" fill="#c4b5fd" opacity="0.6" />
+          <ellipse cx="145" cy="115" rx="18" ry="25" fill="#c4b5fd" opacity="0.6" />
+          <ellipse cx="50" cy="130" rx="12" ry="18" fill="#ddd6fe" opacity="0.5" />
+          <ellipse cx="150" cy="130" rx="12" ry="18" fill="#ddd6fe" opacity="0.5" />
         </>
       );
     default:
       return null;
   }
-};
-
-const renderSecondaryTrait = (
-  trait: PetAppearance["secondaryTrait"],
-  evolution: PetEvolution
-) => {
-  if (trait === "none" || evolution !== "adult") return null;
-  return renderTrait(trait, evolution);
 };
 
 const renderPetShape = (type: PetType, fill: string, accent: string) => {
@@ -212,27 +186,22 @@ const renderPetShape = (type: PetType, fill: string, accent: string) => {
   }
 };
 
-const renderFace = (mood: PetMood) => {
-  const eyeY = 95;
+const renderMouth = (mood: PetMood) => {
   const mouthY = 112;
   return (
-    <>
-      <circle cx="88" cy={eyeY} r="4" fill="#111827" />
-      <circle cx="112" cy={eyeY} r="4" fill="#111827" />
-      <path
-        d={
-          mood === "sad"
-            ? `M90 ${mouthY + 6} Q100 ${mouthY} 110 ${mouthY + 6}`
-            : mood === "hungry"
-              ? `M92 ${mouthY} Q100 ${mouthY + 8} 108 ${mouthY}`
-              : `M90 ${mouthY} Q100 ${mouthY + 6} 110 ${mouthY}`
-        }
-        stroke="#111827"
-        strokeWidth="3"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </>
+    <path
+      d={
+        mood === "sad"
+          ? `M90 ${mouthY + 6} Q100 ${mouthY} 110 ${mouthY + 6}`
+          : mood === "hungry"
+            ? `M92 ${mouthY} Q100 ${mouthY + 8} 108 ${mouthY}`
+            : `M90 ${mouthY} Q100 ${mouthY + 6} 110 ${mouthY}`
+      }
+      stroke="#111827"
+      strokeWidth="3"
+      strokeLinecap="round"
+      fill="none"
+    />
   );
 };
 
@@ -247,14 +216,13 @@ function DynamicAvatar({
   evolution: PetEvolution;
   appearance: PetAppearance;
 }) {
-  const palette = COLOR_MAP[appearance.color];
+  const palette = COLOR_MAP[appearance.color] ?? COLOR_MAP.rose;
   return (
     <svg viewBox="0 0 200 200" className="h-56 w-56 md:h-64 md:w-64">
-      {renderTrait(appearance.primaryTrait, evolution)}
-      {renderSecondaryTrait(appearance.secondaryTrait, evolution)}
+      {renderWings(appearance.wingStyle, evolution)}
       {renderPetShape(type, palette.base, palette.accent)}
-      {renderPattern(appearance.pattern, palette.accent)}
-      {renderFace(mood)}
+      {renderEyes(appearance.eyeStyle, 95)}
+      {renderMouth(mood)}
       {renderAccessory(appearance.accessory)}
     </svg>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePetStore } from "@/lib/pet-store";
+import { usePetStore, type ChatMessage } from "@/lib/pet-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,9 @@ import { buildAnswer, getRecommendationFactors } from "@/lib/domain/recommendati
 import { MessageSquare, Sparkles, Info } from "lucide-react";
 import type { Recommendation } from "@/lib/domain/types";
 
-interface ChatMessage {
-  id: string;
-  question: string;
-  response: ReturnType<typeof buildAnswer>;
-}
-
 export function AskPetPal() {
-  const { pet, balance, totalEarned, totalSpent } = usePetStore();
+  const { pet, balance, totalEarned, totalSpent, chatMessages, addChatMessage } = usePetStore();
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const sampleQuestions = useMemo(
@@ -37,10 +30,7 @@ export function AskPetPal() {
   const handleAsk = (question: string) => {
     if (!question.trim()) return;
     const response = buildAnswer(question, pet, balance, totalSpent, totalEarned);
-    setMessages((prev) => [
-      { id: `msg-${Date.now()}`, question, response },
-      ...prev,
-    ]);
+    addChatMessage({ id: `msg-${Date.now()}`, question, response });
     setInput("");
   };
 
@@ -117,7 +107,7 @@ export function AskPetPal() {
         </CardContent>
       </Card>
 
-      {messages.length === 0 && (
+      {chatMessages.length === 0 && (
         <Card>
           <CardContent className="py-6 text-center text-sm text-muted-foreground">
             Ask a question to get personalized advice for your pet and budget.
@@ -125,7 +115,7 @@ export function AskPetPal() {
         </Card>
       )}
 
-      {messages.map((message) => (
+      {chatMessages.map((message) => (
         <Card key={message.id}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Q: {message.question}</CardTitle>
