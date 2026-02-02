@@ -1,93 +1,85 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type {
+  Pet,
+  PetMood,
+  PetType,
+  PetEvolution,
+  Expense,
+  Task,
+  Earning,
+  StatSnapshot,
+  PetEvent,
+  ActionResult,
+} from "@/lib/domain/types";
+import {
+  FOOD_OPTIONS,
+  TOY_OPTIONS,
+  CLEANING_COST,
+  VET_COST,
+  applyDecay,
+  applyFeed,
+  applyPlay,
+  applyRest,
+  applyClean,
+  applyVet,
+  getEvolution,
+  getMoodState,
+} from "@/lib/domain/petRules";
 
-export type PetType = "cat" | "dog" | "bunny" | "hamster";
-export type PetMood =
-  | "happy"
-  | "sad"
-  | "hungry"
-  | "tired"
-  | "sick"
-  | "energetic";
-export type PetEvolution = "baby" | "teen" | "adult";
-
-export interface Expense {
-  id: string;
-  type: "food" | "toy" | "vet" | "supplies";
-  name: string;
-  amount: number;
-  timestamp: number;
-}
-
-export interface Task {
-  id: string;
-  name: string;
-  reward: number;
-  completed: boolean;
-  completedAt?: number;
-}
-
-export interface Pet {
-  name: string;
-  type: PetType;
-  hunger: number; // 0-100
-  happiness: number; // 0-100
-  energy: number; // 0-100
-  health: number; // 0-100
-  cleanliness: number; // 0-100
-  age: number; // days
-  evolution: PetEvolution;
-  tricks: string[];
-  badges: string[];
-  createdAt: number;
-  lastInteraction: number;
-}
+export type {
+  Pet,
+  PetType,
+  PetMood,
+  PetEvolution,
+  Expense,
+  Task,
+  Earning,
+  StatSnapshot,
+  PetEvent,
+  ActionResult,
+};
 
 export interface GameState {
   pet: Pet | null;
   balance: number;
   savingsGoal: number;
   expenses: Expense[];
+  earnings: Earning[];
   tasks: Task[];
+  statsHistory: StatSnapshot[];
+  events: PetEvent[];
   totalSpent: number;
   totalEarned: number;
   gameStarted: boolean;
+  demoMode: boolean;
 }
 
 interface PetStore extends GameState {
   // Setup actions
   createPet: (name: string, type: PetType) => void;
   resetGame: () => void;
+  setDemoMode: (enabled: boolean) => void;
 
   // Care actions
-  feedPet: (foodType: "basic" | "premium" | "treat") => void;
-  playWithPet: (toyType: "ball" | "puzzle" | "fetch") => void;
-  restPet: () => void;
-  cleanPet: () => void;
-  vetVisit: () => void;
+  feedPet: (foodType: keyof typeof FOOD_OPTIONS) => ActionResult;
+  playWithPet: (toyType: keyof typeof TOY_OPTIONS) => ActionResult;
+  restPet: () => ActionResult;
+  cleanPet: () => ActionResult;
+  vetVisit: () => ActionResult;
 
   // Financial actions
-  completeTask: (taskId: string) => void;
-  setSavingsGoal: (amount: number) => void;
-  addTask: (task: Omit<Task, "id" | "completed">) => void;
+  completeTask: (taskId: string) => ActionResult;
+  setSavingsGoal: (amount: number) => ActionResult;
+  addTask: (task: Omit<Task, "id" | "completed" | "createdAt">) => ActionResult;
 
   // Utility actions
   updatePetStats: () => void;
   getMood: () => PetMood;
+  addEvent: (event: PetEvent) => void;
 }
 
-const FOOD_COSTS = { basic: 5, premium: 15, treat: 8 };
-const FOOD_HUNGER = { basic: 25, premium: 40, treat: 15 };
-const FOOD_HAPPINESS = { basic: 5, premium: 15, treat: 20 };
-
-const TOY_COSTS = { ball: 10, puzzle: 25, fetch: 15 };
-const TOY_HAPPINESS = { ball: 20, puzzle: 30, fetch: 25 };
-const TOY_ENERGY = { ball: -15, puzzle: -10, fetch: -20 };
-
-const VET_COST = 50;
-const CLEANING_COST = 5;
-
-const DEFAULT_TASKS: Omit<Task, "id" | "completed">[] = [
+const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt">[] = [
   { name: "Clean your room", reward: 10 },
   { name: "Do homework", reward: 15 },
   { name: "Help with dishes", reward: 8 },
@@ -95,20 +87,40 @@ const DEFAULT_TASKS: Omit<Task, "id" | "completed">[] = [
   { name: "Read for 30 minutes", reward: 10 },
 ];
 
+const buildTaskList = () =>
+  DEFAULT_TASKS.map((task, index) => ({
+    ...task,
+    id: `task-${index}`,
+    completed: false,
+    createdAt: Date.now(),
+  }));
+
 const initialState: GameState = {
   pet: null,
   balance: 100,
   savingsGoal: 200,
   expenses: [],
-  tasks: DEFAULT_TASKS.map((t, i) => ({
-    ...t,
-    id: `task-${i}`,
-    completed: false,
-  })),
+  earnings: [],
+  tasks: buildTaskList(),
+  statsHistory: [],
+  events: [],
   totalSpent: 0,
   totalEarned: 0,
   gameStarted: false,
+  demoMode: false,
 };
+
+const recordSnapshot = (pet: Pet, balance: number): StatSnapshot => ({
+  id: `snap-${Date.now()}`,
+  timestamp: Date.now(),
+  hunger: pet.hunger,
+  happiness: pet.happiness,
+  energy: pet.energy,
+  cleanliness: pet.cleanliness,
+  health: pet.health,
+  mood: pet.mood,
+  balance,
+});
 
 export const usePetStore = create<PetStore>()(
   persist(
@@ -116,22 +128,30 @@ export const usePetStore = create<PetStore>()(
       ...initialState,
 
       createPet: (name: string, type: PetType) => {
+        const now = Date.now();
+        const demoMode = get().demoMode;
+        const basePet: Pet = {
+          name,
+          type,
+          hunger: demoMode ? 45 : 70,
+          happiness: demoMode ? 55 : 80,
+          energy: demoMode ? 50 : 80,
+          health: demoMode ? 75 : 100,
+          cleanliness: demoMode ? 40 : 90,
+          age: 0,
+          evolution: "baby",
+          mood: "happy",
+          tricks: [],
+          badges: [],
+          createdAt: now,
+          lastInteraction: now,
+          lastUpdated: now,
+        };
+
         set({
-          pet: {
-            name,
-            type,
-            hunger: 70,
-            happiness: 80,
-            energy: 80,
-            health: 100,
-            cleanliness: 90,
-            age: 0,
-            evolution: "baby",
-            tricks: [],
-            badges: [],
-            createdAt: Date.now(),
-            lastInteraction: Date.now(),
-          },
+          pet: basePet,
+          balance: demoMode ? 250 : 100,
+          statsHistory: [recordSnapshot(basePet, demoMode ? 250 : 100)],
           gameStarted: true,
         });
       },
@@ -139,167 +159,195 @@ export const usePetStore = create<PetStore>()(
       resetGame: () => {
         set({
           ...initialState,
-          tasks: DEFAULT_TASKS.map((t, i) => ({
-            ...t,
-            id: `task-${i}`,
-            completed: false,
-          })),
+          tasks: buildTaskList(),
+          demoMode: get().demoMode,
         });
+      },
+
+      setDemoMode: (enabled) => {
+        set({ demoMode: enabled });
       },
 
       feedPet: (foodType) => {
         const state = get();
-        if (!state.pet) return;
+        if (!state.pet) return { ok: false, message: "No pet found." };
 
-        const cost = FOOD_COSTS[foodType];
-        if (state.balance < cost) return;
+        const option = FOOD_OPTIONS[foodType];
+        if (state.balance < option.cost) {
+          return { ok: false, message: `Need $${option.cost} to feed.` };
+        }
 
         const newExpense: Expense = {
           id: `exp-${Date.now()}`,
-          type: "food",
-          name: `${foodType} food`,
-          amount: cost,
+          category: "food",
+          description: `${option.label} food`,
+          amount: option.cost,
           timestamp: Date.now(),
         };
 
+        const updatedPet = applyFeed(state.pet, foodType);
+        updatedPet.lastInteraction = Date.now();
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
+
         set({
-          pet: {
-            ...state.pet,
-            hunger: Math.min(100, state.pet.hunger + FOOD_HUNGER[foodType]),
-            happiness: Math.min(
-              100,
-              state.pet.happiness + FOOD_HAPPINESS[foodType]
-            ),
-            lastInteraction: Date.now(),
-          },
-          balance: state.balance - cost,
+          pet: updatedPet,
+          balance: state.balance - option.cost,
           expenses: [...state.expenses, newExpense],
-          totalSpent: state.totalSpent + cost,
+          totalSpent: state.totalSpent + option.cost,
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance - option.cost)],
         });
+
+        return { ok: true, message: `${state.pet.name} enjoyed the meal!` };
       },
 
       playWithPet: (toyType) => {
         const state = get();
-        if (!state.pet) return;
+        if (!state.pet) return { ok: false, message: "No pet found." };
 
-        const cost = TOY_COSTS[toyType];
-        if (state.balance < cost) return;
-        if (state.pet.energy < 20) return;
+        const option = TOY_OPTIONS[toyType];
+        if (state.balance < option.cost) {
+          return { ok: false, message: `Need $${option.cost} to play.` };
+        }
+        if (state.pet.energy < 20) {
+          return { ok: false, message: "Too tired to play. Let your pet rest." };
+        }
 
         const newExpense: Expense = {
           id: `exp-${Date.now()}`,
-          type: "toy",
-          name: `${toyType} toy`,
-          amount: cost,
+          category: "toy",
+          description: `${option.label} toy`,
+          amount: option.cost,
           timestamp: Date.now(),
         };
 
-        // Chance to learn a trick
         const tricks = [...state.pet.tricks];
         const possibleTricks = ["sit", "roll over", "high five", "spin", "play dead"];
         const unlearnedTricks = possibleTricks.filter((t) => !tricks.includes(t));
         if (unlearnedTricks.length > 0 && Math.random() < 0.2) {
-          tricks.push(unlearnedTricks[Math.floor(Math.random() * unlearnedTricks.length)]);
+          tricks.push(
+            unlearnedTricks[Math.floor(Math.random() * unlearnedTricks.length)]
+          );
         }
 
+        const updatedPet = applyPlay(state.pet, toyType);
+        updatedPet.tricks = tricks;
+        updatedPet.lastInteraction = Date.now();
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
+
         set({
-          pet: {
-            ...state.pet,
-            happiness: Math.min(100, state.pet.happiness + TOY_HAPPINESS[toyType]),
-            energy: Math.max(0, state.pet.energy + TOY_ENERGY[toyType]),
-            tricks,
-            lastInteraction: Date.now(),
-          },
-          balance: state.balance - cost,
+          pet: updatedPet,
+          balance: state.balance - option.cost,
           expenses: [...state.expenses, newExpense],
-          totalSpent: state.totalSpent + cost,
+          totalSpent: state.totalSpent + option.cost,
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance - option.cost)],
         });
+
+        return { ok: true, message: `${state.pet.name} had fun playing!` };
       },
 
       restPet: () => {
         const state = get();
-        if (!state.pet) return;
+        if (!state.pet) return { ok: false, message: "No pet found." };
+
+        const updatedPet = applyRest(state.pet);
+        updatedPet.lastInteraction = Date.now();
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
 
         set({
-          pet: {
-            ...state.pet,
-            energy: Math.min(100, state.pet.energy + 40),
-            hunger: Math.max(0, state.pet.hunger - 10),
-            lastInteraction: Date.now(),
-          },
+          pet: updatedPet,
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance)],
         });
+
+        return { ok: true, message: `${state.pet.name} feels rested.` };
       },
 
       cleanPet: () => {
         const state = get();
-        if (!state.pet) return;
+        if (!state.pet) return { ok: false, message: "No pet found." };
 
-        if (state.balance < CLEANING_COST) return;
+        if (state.balance < CLEANING_COST) {
+          return { ok: false, message: `Need $${CLEANING_COST} to clean.` };
+        }
 
         const newExpense: Expense = {
           id: `exp-${Date.now()}`,
-          type: "supplies",
-          name: "Cleaning supplies",
+          category: "supplies",
+          description: "Cleaning supplies",
           amount: CLEANING_COST,
           timestamp: Date.now(),
         };
 
+        const updatedPet = applyClean(state.pet);
+        updatedPet.lastInteraction = Date.now();
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
+
         set({
-          pet: {
-            ...state.pet,
-            cleanliness: 100,
-            happiness: Math.min(100, state.pet.happiness + 10),
-            lastInteraction: Date.now(),
-          },
+          pet: updatedPet,
           balance: state.balance - CLEANING_COST,
           expenses: [...state.expenses, newExpense],
           totalSpent: state.totalSpent + CLEANING_COST,
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance - CLEANING_COST)],
         });
+
+        return { ok: true, message: `${state.pet.name} is sparkling clean!` };
       },
 
       vetVisit: () => {
         const state = get();
-        if (!state.pet) return;
+        if (!state.pet) return { ok: false, message: "No pet found." };
 
-        if (state.balance < VET_COST) return;
+        if (state.balance < VET_COST) {
+          return { ok: false, message: `Need $${VET_COST} for a vet visit.` };
+        }
 
         const newExpense: Expense = {
           id: `exp-${Date.now()}`,
-          type: "vet",
-          name: "Vet checkup",
+          category: "vet",
+          description: "Vet checkup",
           amount: VET_COST,
           timestamp: Date.now(),
         };
 
-        // Award health badge if first vet visit
         const badges = [...state.pet.badges];
         if (!badges.includes("Health Champion")) {
           badges.push("Health Champion");
         }
 
+        const updatedPet = applyVet(state.pet);
+        updatedPet.badges = badges;
+        updatedPet.lastInteraction = Date.now();
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
+
         set({
-          pet: {
-            ...state.pet,
-            health: 100,
-            badges,
-            lastInteraction: Date.now(),
-          },
+          pet: updatedPet,
           balance: state.balance - VET_COST,
           expenses: [...state.expenses, newExpense],
           totalSpent: state.totalSpent + VET_COST,
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance - VET_COST)],
         });
+
+        return { ok: true, message: "Vet visit complete. Health restored!" };
       },
 
       completeTask: (taskId: string) => {
         const state = get();
         const task = state.tasks.find((t) => t.id === taskId);
-        if (!task || task.completed) return;
+        if (!task || task.completed) {
+          return { ok: false, message: "Task already completed." };
+        }
 
-        // Award badge for first task
         let badges = state.pet?.badges || [];
         if (state.pet && !badges.includes("Hard Worker")) {
           badges = [...badges, "Hard Worker"];
         }
+
+        const newEarning: Earning = {
+          id: `earn-${Date.now()}`,
+          source: "task",
+          description: task.name,
+          amount: task.reward,
+          timestamp: Date.now(),
+        };
 
         set({
           tasks: state.tasks.map((t) =>
@@ -307,6 +355,7 @@ export const usePetStore = create<PetStore>()(
           ),
           balance: state.balance + task.reward,
           totalEarned: state.totalEarned + task.reward,
+          earnings: [...state.earnings, newEarning],
           pet: state.pet
             ? {
                 ...state.pet,
@@ -314,20 +363,38 @@ export const usePetStore = create<PetStore>()(
               }
             : null,
         });
+
+        return { ok: true, message: `Earned $${task.reward} for ${task.name}.` };
       },
 
       setSavingsGoal: (amount: number) => {
+        if (Number.isNaN(amount) || amount <= 0) {
+          return { ok: false, message: "Goal must be a positive number." };
+        }
         set({ savingsGoal: amount });
+        return { ok: true, message: `Savings goal set to $${amount}.` };
       },
 
       addTask: (task) => {
-        const state = get();
+        if (Number.isNaN(task.reward) || task.reward <= 0) {
+          return { ok: false, message: "Reward must be a positive number." };
+        }
+        if (!task.name.trim()) {
+          return { ok: false, message: "Task name is required." };
+        }
+
+        const newTask = {
+          ...task,
+          id: `task-${Date.now()}`,
+          completed: false,
+          createdAt: Date.now(),
+        };
+
         set({
-          tasks: [
-            ...state.tasks,
-            { ...task, id: `task-${Date.now()}`, completed: false },
-          ],
+          tasks: [...get().tasks, newTask],
         });
+
+        return { ok: true, message: "Task added." };
       },
 
       updatePetStats: () => {
@@ -335,22 +402,13 @@ export const usePetStore = create<PetStore>()(
         if (!state.pet) return;
 
         const now = Date.now();
-        const timeSinceLastInteraction = now - state.pet.lastInteraction;
-        const hoursPassed = timeSinceLastInteraction / (1000 * 60 * 60);
+        const timeSinceLastUpdate = now - state.pet.lastUpdated;
+        const hoursPassed = timeSinceLastUpdate / (1000 * 60 * 60);
+        const demoScale = state.demoMode ? 360 : 1;
 
-        // Stats decay over time
-        const decayRate = 2;
-        const decay = Math.floor(hoursPassed * decayRate);
-
-        // Calculate age in days
         const daysPassed = Math.floor((now - state.pet.createdAt) / (1000 * 60 * 60 * 24));
+        const evolution: PetEvolution = getEvolution(daysPassed);
 
-        // Evolution based on age
-        let evolution: PetEvolution = "baby";
-        if (daysPassed >= 7) evolution = "adult";
-        else if (daysPassed >= 3) evolution = "teen";
-
-        // Award age badges
         const badges = [...state.pet.badges];
         if (daysPassed >= 1 && !badges.includes("First Day")) {
           badges.push("First Day");
@@ -359,38 +417,28 @@ export const usePetStore = create<PetStore>()(
           badges.push("Week Veteran");
         }
 
-        // Health affected by low stats
-        let healthChange = 0;
-        if (state.pet.hunger < 20) healthChange -= 5;
-        if (state.pet.cleanliness < 20) healthChange -= 3;
+        const { updatedPet, events } = applyDecay(state.pet, hoursPassed, demoScale);
+        updatedPet.age = daysPassed;
+        updatedPet.evolution = evolution;
+        updatedPet.badges = badges;
+        updatedPet.lastUpdated = now;
+        updatedPet.mood = getMoodState(updatedPet, state.pet.mood);
 
         set({
-          pet: {
-            ...state.pet,
-            hunger: Math.max(0, state.pet.hunger - decay),
-            happiness: Math.max(0, state.pet.happiness - Math.floor(decay * 0.5)),
-            energy: Math.min(100, state.pet.energy + Math.floor(decay * 0.3)),
-            cleanliness: Math.max(0, state.pet.cleanliness - Math.floor(decay * 0.3)),
-            health: Math.max(0, Math.min(100, state.pet.health + healthChange)),
-            age: daysPassed,
-            evolution,
-            badges,
-          },
+          pet: updatedPet,
+          events: [...state.events, ...events],
+          statsHistory: [...state.statsHistory, recordSnapshot(updatedPet, state.balance)],
         });
       },
 
       getMood: () => {
         const state = get();
         if (!state.pet) return "happy";
+        return state.pet.mood;
+      },
 
-        const { hunger, happiness, energy, health, cleanliness } = state.pet;
-
-        if (health < 30) return "sick";
-        if (hunger < 30) return "hungry";
-        if (energy < 20) return "tired";
-        if (happiness < 30) return "sad";
-        if (happiness > 80 && energy > 60) return "energetic";
-        return "happy";
+      addEvent: (event: PetEvent) => {
+        set({ events: [...get().events, event] });
       },
     }),
     {

@@ -1,15 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePetStore, type PetType } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PawPrint, Sparkles } from "lucide-react";
 
-const PET_OPTIONS: { type: PetType; emoji: string; name: string; description: string }[] = [
+const PET_OPTIONS: {
+  type: PetType;
+  emoji: string;
+  name: string;
+  description: string;
+}[] = [
   { type: "cat", emoji: "🐱", name: "Cat", description: "Independent and playful" },
   { type: "dog", emoji: "🐶", name: "Dog", description: "Loyal and energetic" },
   { type: "bunny", emoji: "🐰", name: "Bunny", description: "Gentle and cuddly" },
@@ -21,9 +33,23 @@ export function SetupScreen() {
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [step, setStep] = useState(1);
   const createPet = usePetStore((state) => state.createPet);
+  const demoMode = usePetStore((state) => state.demoMode);
+  const setDemoMode = usePetStore((state) => state.setDemoMode);
+
+  const nameErrors = useMemo(() => {
+    const errors: string[] = [];
+    const trimmed = petName.trim();
+    if (!trimmed) errors.push("Name is required.");
+    if (trimmed.length > 20) errors.push("Name must be 20 characters or less.");
+    return errors;
+  }, [petName]);
+
+  const typeErrors = useMemo(() => {
+    return selectedType ? [] : ["Please choose a pet type."];
+  }, [selectedType]);
 
   const handleCreate = () => {
-    if (petName.trim() && selectedType) {
+    if (nameErrors.length === 0 && selectedType) {
       createPet(petName.trim(), selectedType);
     }
   };
@@ -37,9 +63,7 @@ export function SetupScreen() {
             <PawPrint className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">PetPal</h1>
-          <p className="text-muted-foreground">
-            Your virtual companion awaits!
-          </p>
+          <p className="text-muted-foreground">Your virtual companion awaits!</p>
         </div>
 
         {/* Step 1: Choose Pet Type */}
@@ -56,7 +80,7 @@ export function SetupScreen() {
                 Select the type of virtual friend you want to care for
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 {PET_OPTIONS.map((pet) => (
                   <button
@@ -78,8 +102,24 @@ export function SetupScreen() {
                   </button>
                 ))}
               </div>
+              {typeErrors.length > 0 && (
+                <div className="text-xs text-red-500 space-y-1">
+                  {typeErrors.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <p className="font-medium text-foreground">Demo Mode</p>
+                  <p className="text-xs text-muted-foreground">
+                    Speed up time for presentations
+                  </p>
+                </div>
+                <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+              </div>
               <Button
-                className="w-full mt-6"
+                className="w-full"
                 size="lg"
                 disabled={!selectedType}
                 onClick={() => setStep(2)}
@@ -102,8 +142,8 @@ export function SetupScreen() {
               </CardTitle>
               <CardDescription>
                 Give your{" "}
-                {PET_OPTIONS.find((p) => p.type === selectedType)?.name.toLowerCase()}{" "}
-                a special name
+                {PET_OPTIONS.find((p) => p.type === selectedType)?.name.toLowerCase()}
+                {" "}a special name
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -129,6 +169,14 @@ export function SetupScreen() {
                     className="text-center text-lg"
                     maxLength={20}
                   />
+                  {nameErrors.length > 0 && (
+                    <div className="text-xs text-red-500 space-y-1">
+                      {nameErrors.length > 1 && <p>Please fix the following:</p>}
+                      {nameErrors.map((error) => (
+                        <p key={error}>{error}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -142,7 +190,7 @@ export function SetupScreen() {
                   <Button
                     className="flex-1"
                     size="lg"
-                    disabled={!petName.trim()}
+                    disabled={nameErrors.length > 0}
                     onClick={handleCreate}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
