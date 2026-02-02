@@ -10,6 +10,26 @@ export type PetMood =
   | "sick"
   | "energetic";
 export type PetEvolution = "baby" | "teen" | "adult";
+export type PetColor = "charcoal" | "golden" | "cream" | "sky" | "rose";
+export type PetPattern = "solid" | "spots" | "stripes" | "patches";
+export type PetAccessory = "none" | "bow" | "collar" | "hat" | "bandana";
+export type PetTrait =
+  | "none"
+  | "wings"
+  | "crown"
+  | "cape"
+  | "horns"
+  | "backpack"
+  | "sparkles";
+export type AvatarMode = "emoji" | "dynamic";
+
+export interface PetAppearance {
+  color: PetColor;
+  pattern: PetPattern;
+  accessory: PetAccessory;
+  primaryTrait: PetTrait;
+  secondaryTrait: PetTrait;
+}
 
 export interface Expense {
   id: string;
@@ -37,6 +57,7 @@ export interface Pet {
   cleanliness: number; // 0-100
   age: number; // days
   evolution: PetEvolution;
+  appearance: PetAppearance;
   tricks: string[];
   badges: string[];
   createdAt: number;
@@ -52,12 +73,14 @@ export interface GameState {
   totalSpent: number;
   totalEarned: number;
   gameStarted: boolean;
+  avatarMode: AvatarMode;
 }
 
 interface PetStore extends GameState {
   // Setup actions
-  createPet: (name: string, type: PetType) => void;
+  createPet: (name: string, type: PetType, appearance: PetAppearance) => void;
   resetGame: () => void;
+  setAvatarMode: (mode: AvatarMode) => void;
 
   // Care actions
   feedPet: (foodType: "basic" | "premium" | "treat") => void;
@@ -108,6 +131,15 @@ const initialState: GameState = {
   totalSpent: 0,
   totalEarned: 0,
   gameStarted: false,
+  avatarMode: "dynamic",
+};
+
+const DEFAULT_APPEARANCE: PetAppearance = {
+  color: "golden",
+  pattern: "solid",
+  accessory: "none",
+  primaryTrait: "wings",
+  secondaryTrait: "none",
 };
 
 export const usePetStore = create<PetStore>()(
@@ -115,7 +147,7 @@ export const usePetStore = create<PetStore>()(
     (set, get) => ({
       ...initialState,
 
-      createPet: (name: string, type: PetType) => {
+      createPet: (name: string, type: PetType, appearance: PetAppearance) => {
         set({
           pet: {
             name,
@@ -127,6 +159,7 @@ export const usePetStore = create<PetStore>()(
             cleanliness: 90,
             age: 0,
             evolution: "baby",
+            appearance,
             tricks: [],
             badges: [],
             createdAt: Date.now(),
@@ -144,7 +177,12 @@ export const usePetStore = create<PetStore>()(
             id: `task-${i}`,
             completed: false,
           })),
+          avatarMode: get().avatarMode,
         });
+      },
+
+      setAvatarMode: (mode) => {
+        set({ avatarMode: mode });
       },
 
       feedPet: (foodType) => {
