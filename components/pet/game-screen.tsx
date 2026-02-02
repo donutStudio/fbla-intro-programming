@@ -6,6 +6,11 @@ import { PetAvatar } from "./pet-avatar";
 import { PetStats } from "./pet-stats";
 import { PetActions } from "./pet-actions";
 import { FinancePanel } from "./finance-panel";
+import { PetInsights } from "./pet-insights";
+import { AnalyticsDashboard } from "./analytics-dashboard";
+import { HelpPanel } from "./help-panel";
+import { AskPetPal } from "./ask-petpal";
+import { AboutPanel } from "./about-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -20,7 +25,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PawPrint, Wallet, Activity, RotateCcw, Menu } from "lucide-react";
+import {
+  PawPrint,
+  Wallet,
+  Activity,
+  RotateCcw,
+  Menu,
+  BarChart3,
+  MessageSquare,
+  HelpCircle,
+  Sparkles,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -35,12 +50,11 @@ export function GameScreen() {
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
-  // Update pet stats periodically
   useEffect(() => {
     updatePetStats();
-    const interval = setInterval(updatePetStats, 60000); // Every minute
+    const interval = setInterval(updatePetStats, demoMode ? 10000 : 60000);
     return () => clearInterval(interval);
-  }, [updatePetStats]);
+  }, [updatePetStats, demoMode]);
 
   const handleInteraction = () => {
     setIsInteracting(true);
@@ -86,7 +100,7 @@ export function GameScreen() {
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <Wallet className="h-5 w-5 text-primary" />
-                    Finance
+                    Finance + Settings
                   </SheetTitle>
                 </SheetHeader>
                 <div className="mt-4">
@@ -135,70 +149,68 @@ export function GameScreen() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Left Column - Pet & Actions (Mobile: Full width) */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Pet Avatar Card */}
-            <div className="bg-card rounded-2xl p-6 md:p-8 shadow-sm border border-border">
-              <PetAvatar isInteracting={isInteracting} />
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full flex flex-wrap justify-start gap-2">
+            <TabsTrigger value="care" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Care
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="ask" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Ask PetPal
+            </TabsTrigger>
+            <TabsTrigger value="help" className="gap-2">
+              <HelpCircle className="h-4 w-4" />
+              Help
+            </TabsTrigger>
+            <TabsTrigger value="about" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              About
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Tabs for Mobile */}
-            <div className="md:hidden">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="w-full"
-              >
-                <TabsList className="w-full grid grid-cols-2">
-                  <TabsTrigger value="care" className="gap-2">
-                    <Activity className="h-4 w-4" />
-                    Care
-                  </TabsTrigger>
-                  <TabsTrigger value="finance" className="gap-2">
-                    <Wallet className="h-4 w-4" />
-                    Finance
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="care" className="mt-4 space-y-4">
+          <TabsContent value="care" className="mt-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 space-y-6">
+                <div className="bg-card rounded-2xl p-6 md:p-8 shadow-sm border border-border">
+                  <PetAvatar isInteracting={isInteracting} />
+                </div>
+                <div className="grid lg:grid-cols-2 gap-4">
                   <PetStats />
                   <PetActions onInteraction={handleInteraction} />
-                </TabsContent>
-                <TabsContent value="finance" className="mt-4">
+                  <PetInsights />
+                </div>
+              </div>
+
+              <div className="hidden md:block">
+                <div className="sticky top-24">
                   <FinancePanel />
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
             </div>
+          </TabsContent>
 
-            {/* Desktop Stats & Actions */}
-            <div className="hidden md:grid md:grid-cols-2 gap-4">
-              <PetStats />
-              <PetActions onInteraction={handleInteraction} />
-            </div>
-          </div>
+          <TabsContent value="analytics" className="mt-6">
+            <AnalyticsDashboard />
+          </TabsContent>
 
-          {/* Right Column - Finance (Desktop only) */}
-          <div className="hidden md:block">
-            <div className="sticky top-24">
-              <FinancePanel />
-            </div>
-          </div>
-        </div>
+          <TabsContent value="ask" className="mt-6">
+            <AskPetPal />
+          </TabsContent>
+
+          <TabsContent value="help" className="mt-6">
+            <HelpPanel />
+          </TabsContent>
+
+          <TabsContent value="about" className="mt-6">
+            <AboutPanel />
+          </TabsContent>
+        </Tabs>
       </main>
-
-      {/* Help Tips */}
-      <div className="max-w-6xl mx-auto px-4 pb-8">
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <h3 className="font-semibold text-sm mb-2 text-foreground">Tips</h3>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Keep all stats above 30% to maintain a happy pet</li>
-            <li>• Complete tasks to earn money for pet care</li>
-            <li>• Playing with toys might teach your pet new tricks!</li>
-            <li>• Visit the vet when your pet&apos;s health is low</li>
-            <li>• Your pet evolves from baby to teen to adult over time</li>
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }

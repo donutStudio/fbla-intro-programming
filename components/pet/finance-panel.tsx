@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { usePetStore } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +15,16 @@ import {
   Clock,
   DollarSign,
   ListTodo,
+  PlusCircle,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const GOAL_MAX = 10000;
+const TASK_REWARD_MAX = 500;
 
 export function FinancePanel() {
   const {
@@ -28,10 +36,69 @@ export function FinancePanel() {
     totalEarned,
     completeTask,
     setSavingsGoal,
+    addTask,
   } = usePetStore();
+
+  const [customGoal, setCustomGoal] = useState("");
+  const [taskName, setTaskName] = useState("");
+  const [taskReward, setTaskReward] = useState("");
 
   const savingsProgress = Math.min((balance / savingsGoal) * 100, 100);
   const recentExpenses = expenses.slice(-5).reverse();
+
+  const goalErrors = useMemo(() => {
+    const errors: string[] = [];
+    const value = Number(customGoal);
+    if (!customGoal.trim()) {
+      errors.push("Enter a goal amount.");
+    } else if (Number.isNaN(value)) {
+      errors.push("Goal must be a number.");
+    } else {
+      if (value <= 0) errors.push("Goal must be greater than 0.");
+      if (value > GOAL_MAX) errors.push(`Goal must be under $${GOAL_MAX}.`);
+    }
+    return errors;
+  }, [customGoal]);
+
+  const taskErrors = useMemo(() => {
+    const errors: string[] = [];
+    const reward = Number(taskReward);
+    if (!taskName.trim()) errors.push("Task name is required.");
+    if (!taskReward.trim()) {
+      errors.push("Reward is required.");
+    } else if (Number.isNaN(reward)) {
+      errors.push("Reward must be a number.");
+    } else {
+      if (reward <= 0) errors.push("Reward must be greater than 0.");
+      if (reward > TASK_REWARD_MAX) {
+        errors.push(`Reward must be under $${TASK_REWARD_MAX}.`);
+      }
+    }
+    return errors;
+  }, [taskName, taskReward]);
+
+  const handleGoalSubmit = () => {
+    const value = Number(customGoal);
+    const result = setSavingsGoal(value);
+    if (result.ok) {
+      toast.success(result.message);
+      setCustomGoal("");
+    } else {
+      toast.error(result.message);
+    }
+  };
+
+  const handleTaskSubmit = () => {
+    const reward = Number(taskReward);
+    const result = addTask({ name: taskName.trim(), reward });
+    if (result.ok) {
+      toast.success(result.message);
+      setTaskName("");
+      setTaskReward("");
+    } else {
+      toast.error(result.message);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -75,7 +142,7 @@ export function FinancePanel() {
             Savings Goal
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
@@ -91,18 +158,51 @@ export function FinancePanel() {
               </p>
             )}
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[100, 200, 500].map((goal) => (
               <Button
                 key={goal}
                 variant={savingsGoal === goal ? "default" : "outline"}
                 size="sm"
                 className="text-xs"
-                onClick={() => setSavingsGoal(goal)}
+                onClick={() => {
+                  const result = setSavingsGoal(goal);
+                  if (result.ok) toast.success(result.message);
+                  else toast.error(result.message);
+                }}
               >
                 ${goal}
               </Button>
             ))}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="custom-goal" className="text-xs">
+              Custom goal
+            </Label>
+            <Input
+              id="custom-goal"
+              placeholder="Enter custom goal"
+              value={customGoal}
+              onChange={(event) => setCustomGoal(event.target.value)}
+            />
+            {goalErrors.length > 0 && (
+              <div className="text-xs text-red-500 space-y-1">
+                {goalErrors.length > 1 && (
+                  <p>Please fix the following:</p>
+                )}
+                {goalErrors.map((error) => (
+                  <p key={error}>{error}</p>
+                ))}
+              </div>
+            )}
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={handleGoalSubmit}
+              disabled={goalErrors.length > 0}
+            >
+              Set Goal
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -115,8 +215,8 @@ export function FinancePanel() {
             Earn Money
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-48">
+        <CardContent className="space-y-3">
+          <ScrollArea className="h-44">
             <div className="space-y-2">
               {tasks.map((task) => (
                 <div
@@ -155,7 +255,11 @@ export function FinancePanel() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs"
-                        onClick={() => completeTask(task.id)}
+                        onClick={() => {
+                          const result = completeTask(task.id);
+                          if (result.ok) toast.success(result.message);
+                          else toast.error(result.message);
+                        }}
                       >
                         Done
                       </Button>
@@ -165,6 +269,40 @@ export function FinancePanel() {
               ))}
             </div>
           </ScrollArea>
+          <div className="space-y-2">
+            <Label htmlFor="task-name" className="text-xs">
+              Add a new task
+            </Label>
+            <Input
+              id="task-name"
+              placeholder="Task title"
+              value={taskName}
+              onChange={(event) => setTaskName(event.target.value)}
+            />
+            <Input
+              id="task-reward"
+              placeholder="Reward amount"
+              value={taskReward}
+              onChange={(event) => setTaskReward(event.target.value)}
+            />
+            {taskErrors.length > 0 && (
+              <div className="text-xs text-red-500 space-y-1">
+                {taskErrors.length > 1 && <p>Please fix the following:</p>}
+                {taskErrors.map((error) => (
+                  <p key={error}>{error}</p>
+                ))}
+              </div>
+            )}
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={handleTaskSubmit}
+              disabled={taskErrors.length > 0}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -190,9 +328,9 @@ export function FinancePanel() {
                 >
                   <div className="flex items-center gap-2">
                     <span className="capitalize text-muted-foreground">
-                      {expense.type}
+                      {expense.category}
                     </span>
-                    <span>{expense.name}</span>
+                    <span>{expense.description}</span>
                   </div>
                   <span className="font-medium text-red-600">
                     -${expense.amount}
