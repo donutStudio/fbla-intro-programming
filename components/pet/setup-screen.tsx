@@ -97,13 +97,6 @@ export function SetupScreen() {
                   </button>
                 ))}
               </div>
-              {typeErrors.length > 0 && (
-                <div className="text-xs text-red-500 space-y-1">
-                  {typeErrors.map((error) => (
-                    <p key={error}>{error}</p>
-                  ))}
-                </div>
-              )}
               <div className="flex items-center justify-between text-sm">
                 <div>
                   <p className="font-medium text-foreground">Demo Mode</p>
@@ -394,7 +387,7 @@ export function SetupScreen() {
                   <Button
                     className="flex-1"
                     size="lg"
-                    disabled={nameErrors.length > 0}
+                    disabled={!petName.trim()}
                     onClick={handleCreate}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />

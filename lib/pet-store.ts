@@ -1,70 +1,47 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type {
+  Pet,
+  PetType,
+  PetMood,
+  PetEvolution,
+  PetAppearance,
+  Expense,
+  Earning,
+  Task,
+  StatSnapshot,
+  PetEvent,
+  ActionResult,
+} from "@/lib/domain/types";
+import {
+  FOOD_OPTIONS,
+  TOY_OPTIONS,
+  CLEANING_COST,
+  VET_COST,
+  applyFeed,
+  applyPlay,
+  applyRest,
+  applyClean,
+  applyVet,
+  applyDecay,
+  getMoodState,
+  getEvolution,
+} from "@/lib/domain/petRules";
 
-export type PetType = "cat" | "dog" | "bunny" | "hamster";
-export type PetMood =
-  | "happy"
-  | "sad"
-  | "hungry"
-  | "tired"
-  | "sick"
-  | "energetic";
-export type PetEvolution = "baby" | "teen" | "adult";
-export type PetColor = "charcoal" | "golden" | "cream" | "sky" | "rose";
-export type PetPattern = "solid" | "spots" | "stripes" | "patches";
-export type PetAccessory = "none" | "bow" | "collar" | "hat" | "bandana";
-export type PetTrait =
-  | "none"
-  | "wings"
-  | "crown"
-  | "cape"
-  | "horns"
-  | "backpack"
-  | "sparkles";
 export type AvatarMode = "emoji" | "dynamic";
 
-export interface PetAppearance {
-  color: PetColor;
-  pattern: PetPattern;
-  accessory: PetAccessory;
-  primaryTrait: PetTrait;
-  secondaryTrait: PetTrait;
-}
+// Re-export types for backward compatibility
+export type {
+  Pet,
+  PetType,
+  PetMood,
+  PetEvolution,
+  PetAppearance,
+  Expense,
+  Task,
+};
 
-export interface Expense {
-  id: string;
-  type: "food" | "toy" | "vet" | "supplies";
-  name: string;
-  amount: number;
-  timestamp: number;
-}
-
-export interface Task {
-  id: string;
-  name: string;
-  reward: number;
-  completed: boolean;
-  completedAt?: number;
-}
-
-export interface Pet {
-  name: string;
-  type: PetType;
-  hunger: number; // 0-100
-  happiness: number; // 0-100
-  energy: number; // 0-100
-  health: number; // 0-100
-  cleanliness: number; // 0-100
-  age: number; // days
-  evolution: PetEvolution;
-  appearance: PetAppearance;
-  tricks: string[];
-  badges: string[];
-  createdAt: number;
-  lastInteraction: number;
-}
-
-export interface GameState {
+interface GameState {
   pet: Pet | null;
   balance: number;
   savingsGoal: number;
@@ -138,11 +115,10 @@ const initialState: GameState = {
 };
 
 const DEFAULT_APPEARANCE: PetAppearance = {
-  color: "golden",
-  pattern: "solid",
+  color: "rose",
+  eyeStyle: "round",
   accessory: "none",
-  primaryTrait: "wings",
-  secondaryTrait: "none",
+  wingStyle: "none",
 };
 
 const recordSnapshot = (pet: Pet, balance: number): StatSnapshot => ({
@@ -165,6 +141,7 @@ export const usePetStore = create<PetStore>()(
       createPet: (name: string, type: PetType, appearance: PetAppearance) => {
         const demoMode = get().demoMode;
         const startingBalance = demoMode ? 250 : get().balance;
+        const now = Date.now();
         set({
           pet: {
             name,
@@ -176,11 +153,13 @@ export const usePetStore = create<PetStore>()(
             cleanliness: demoMode ? 60 : 90,
             age: 0,
             evolution: "baby",
+            mood: "happy",
             appearance,
             tricks: [],
             badges: [],
-            createdAt: Date.now(),
-            lastInteraction: Date.now(),
+            createdAt: now,
+            lastInteraction: now,
+            lastUpdated: now,
           },
           balance: startingBalance,
           gameStarted: true,
@@ -194,6 +173,7 @@ export const usePetStore = create<PetStore>()(
             ...t,
             id: `task-${i}`,
             completed: false,
+            createdAt: Date.now(),
           })),
           avatarMode: get().avatarMode,
           demoMode: get().demoMode,
@@ -445,10 +425,6 @@ export const usePetStore = create<PetStore>()(
         const timeSinceLastInteraction = now - state.pet.lastInteraction;
         const hoursPassed = timeSinceLastInteraction / (1000 * 60 * 60);
         const demoScale = state.demoMode ? 6 : 1;
-
-        // Stats decay over time
-        const decayRate = 2;
-        const decay = Math.floor(hoursPassed * decayRate * demoScale);
 
         // Calculate age in days
         const daysPassed = Math.floor((now - state.pet.createdAt) / (1000 * 60 * 60 * 24));
