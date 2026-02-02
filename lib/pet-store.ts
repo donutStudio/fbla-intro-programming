@@ -1,44 +1,68 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type {
-  Pet,
-  PetMood,
-  PetType,
-  PetEvolution,
-  Expense,
-  Task,
-  Earning,
-  StatSnapshot,
-  PetEvent,
-  ActionResult,
-} from "@/lib/domain/types";
-import {
-  FOOD_OPTIONS,
-  TOY_OPTIONS,
-  CLEANING_COST,
-  VET_COST,
-  applyDecay,
-  applyFeed,
-  applyPlay,
-  applyRest,
-  applyClean,
-  applyVet,
-  getEvolution,
-  getMoodState,
-} from "@/lib/domain/petRules";
 
-export type {
-  Pet,
-  PetType,
-  PetMood,
-  PetEvolution,
-  Expense,
-  Task,
-  Earning,
-  StatSnapshot,
-  PetEvent,
-  ActionResult,
-};
+export type PetType = "cat" | "dog" | "bunny" | "hamster";
+export type PetMood =
+  | "happy"
+  | "sad"
+  | "hungry"
+  | "tired"
+  | "sick"
+  | "energetic";
+export type PetEvolution = "baby" | "teen" | "adult";
+export type PetColor = "charcoal" | "golden" | "cream" | "sky" | "rose";
+export type PetPattern = "solid" | "spots" | "stripes" | "patches";
+export type PetAccessory = "none" | "bow" | "collar" | "hat" | "bandana";
+export type PetTrait =
+  | "none"
+  | "wings"
+  | "crown"
+  | "cape"
+  | "horns"
+  | "backpack"
+  | "sparkles";
+export type AvatarMode = "emoji" | "dynamic";
+
+export interface PetAppearance {
+  color: PetColor;
+  pattern: PetPattern;
+  accessory: PetAccessory;
+  primaryTrait: PetTrait;
+  secondaryTrait: PetTrait;
+}
+
+export interface Expense {
+  id: string;
+  type: "food" | "toy" | "vet" | "supplies";
+  name: string;
+  amount: number;
+  timestamp: number;
+}
+
+export interface Task {
+  id: string;
+  name: string;
+  reward: number;
+  completed: boolean;
+  completedAt?: number;
+}
+
+export interface Pet {
+  name: string;
+  type: PetType;
+  hunger: number; // 0-100
+  happiness: number; // 0-100
+  energy: number; // 0-100
+  health: number; // 0-100
+  cleanliness: number; // 0-100
+  age: number; // days
+  evolution: PetEvolution;
+  appearance: PetAppearance;
+  tricks: string[];
+  badges: string[];
+  createdAt: number;
+  lastInteraction: number;
+}
 
 export interface GameState {
   pet: Pet | null;
@@ -52,14 +76,14 @@ export interface GameState {
   totalSpent: number;
   totalEarned: number;
   gameStarted: boolean;
-  demoMode: boolean;
+  avatarMode: AvatarMode;
 }
 
 interface PetStore extends GameState {
   // Setup actions
-  createPet: (name: string, type: PetType) => void;
+  createPet: (name: string, type: PetType, appearance: PetAppearance) => void;
   resetGame: () => void;
-  setDemoMode: (enabled: boolean) => void;
+  setAvatarMode: (mode: AvatarMode) => void;
 
   // Care actions
   feedPet: (foodType: keyof typeof FOOD_OPTIONS) => ActionResult;
@@ -107,7 +131,15 @@ const initialState: GameState = {
   totalSpent: 0,
   totalEarned: 0,
   gameStarted: false,
-  demoMode: false,
+  avatarMode: "dynamic",
+};
+
+const DEFAULT_APPEARANCE: PetAppearance = {
+  color: "golden",
+  pattern: "solid",
+  accessory: "none",
+  primaryTrait: "wings",
+  secondaryTrait: "none",
 };
 
 const recordSnapshot = (pet: Pet, balance: number): StatSnapshot => ({
@@ -127,31 +159,24 @@ export const usePetStore = create<PetStore>()(
     (set, get) => ({
       ...initialState,
 
-      createPet: (name: string, type: PetType) => {
-        const now = Date.now();
-        const demoMode = get().demoMode;
-        const basePet: Pet = {
-          name,
-          type,
-          hunger: demoMode ? 45 : 70,
-          happiness: demoMode ? 55 : 80,
-          energy: demoMode ? 50 : 80,
-          health: demoMode ? 75 : 100,
-          cleanliness: demoMode ? 40 : 90,
-          age: 0,
-          evolution: "baby",
-          mood: "happy",
-          tricks: [],
-          badges: [],
-          createdAt: now,
-          lastInteraction: now,
-          lastUpdated: now,
-        };
-
+      createPet: (name: string, type: PetType, appearance: PetAppearance) => {
         set({
-          pet: basePet,
-          balance: demoMode ? 250 : 100,
-          statsHistory: [recordSnapshot(basePet, demoMode ? 250 : 100)],
+          pet: {
+            name,
+            type,
+            hunger: 70,
+            happiness: 80,
+            energy: 80,
+            health: 100,
+            cleanliness: 90,
+            age: 0,
+            evolution: "baby",
+            appearance,
+            tricks: [],
+            badges: [],
+            createdAt: Date.now(),
+            lastInteraction: Date.now(),
+          },
           gameStarted: true,
         });
       },
@@ -159,13 +184,17 @@ export const usePetStore = create<PetStore>()(
       resetGame: () => {
         set({
           ...initialState,
-          tasks: buildTaskList(),
-          demoMode: get().demoMode,
+          tasks: DEFAULT_TASKS.map((t, i) => ({
+            ...t,
+            id: `task-${i}`,
+            completed: false,
+          })),
+          avatarMode: get().avatarMode,
         });
       },
 
-      setDemoMode: (enabled) => {
-        set({ demoMode: enabled });
+      setAvatarMode: (mode) => {
+        set({ avatarMode: mode });
       },
 
       feedPet: (foodType) => {

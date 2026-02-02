@@ -7,6 +7,17 @@ export type PetMood =
   | "sick"
   | "energetic";
 export type PetEvolution = "baby" | "teen" | "adult";
+export type PetColor = "rose" | "sky" | "emerald" | "amber" | "lavender";
+export type PetEyeStyle = "round" | "sparkle" | "sleepy";
+export type PetAccessory = "none" | "bow" | "hat" | "bandana";
+export type PetWingStyle = "none" | "angel" | "fairy";
+
+export interface PetAppearance {
+  color: PetColor;
+  eyeStyle: PetEyeStyle;
+  accessory: PetAccessory;
+  wingStyle: PetWingStyle;
+}
 
 export type ExpenseCategory = "food" | "toy" | "vet" | "supplies";
 
@@ -65,6 +76,7 @@ export interface Pet {
   age: number; // days
   evolution: PetEvolution;
   mood: PetMood;
+  appearance: PetAppearance;
   tricks: string[];
   badges: string[];
   createdAt: number;

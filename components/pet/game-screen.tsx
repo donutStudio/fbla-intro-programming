@@ -45,14 +45,8 @@ import {
 } from "@/components/ui/sheet";
 
 export function GameScreen() {
-  const {
-    pet,
-    updatePetStats,
-    resetGame,
-    balance,
-    demoMode,
-    setDemoMode,
-  } = usePetStore();
+  const { pet, updatePetStats, resetGame, balance, avatarMode, setAvatarMode } =
+    usePetStore();
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
@@ -86,8 +80,13 @@ export function GameScreen() {
             </div>
 
             <div className="hidden md:flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Demo Mode</span>
-              <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+              <span className="text-muted-foreground">Dynamic Avatar</span>
+              <Switch
+                checked={avatarMode === "dynamic"}
+                onCheckedChange={(checked) =>
+                  setAvatarMode(checked ? "dynamic" : "emoji")
+                }
+              />
             </div>
 
             {/* Mobile menu */}
@@ -104,10 +103,15 @@ export function GameScreen() {
                     Finance + Settings
                   </SheetTitle>
                 </SheetHeader>
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Demo Mode</span>
-                    <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span>Dynamic Avatar</span>
+                    <Switch
+                      checked={avatarMode === "dynamic"}
+                      onCheckedChange={(checked) =>
+                        setAvatarMode(checked ? "dynamic" : "emoji")
+                      }
+                    />
                   </div>
                   <FinancePanel />
                 </div>

@@ -1,7 +1,7 @@
 # PetPal Virtual Pet + Financial Responsibility
 
 ## Project Overview
-PetPal is a virtual pet simulator that teaches responsible pet ownership and budgeting at the same time. You create a custom pet, watch its stats change over time, and make care decisions that influence mood, health, and growth. Every care action has a real in-game cost, so players must earn money, set savings goals, and balance essentials vs. fun. PetPal tracks expenses by category, visualizes spending trends, and includes an Ask PetPal assistant for recommendations. The pet evolves across life stages, learns tricks, and reacts emotionally to how well it is treated.
+PetPal is a virtual pet simulator that teaches responsible pet ownership and budgeting at the same time. You create a custom pet, design its appearance, watch its stats change over time, and make care decisions that influence mood, health, and growth. Every care action has a real in-game cost, so players must earn money, set savings goals, and balance essentials vs. fun. PetPal tracks expenses by category, visualizes spending trends, and includes an Ask PetPal assistant for recommendations. The pet evolves across life stages, earns new visual traits like wings, learns tricks, and reacts emotionally to how well it is treated.
 
 ## How to Run
 ### Requirements
@@ -29,7 +29,7 @@ pnpm start
 ```
 
 ## How to Play
-1. Create and customize your pet (type + name).
+1. Create and customize your pet (type, name, and appearance).
 2. Monitor stats (hunger, happiness, energy, cleanliness, health).
 3. Use care actions (feed, play, rest, clean, vet) to keep your pet healthy.
 4. Complete tasks to earn money and set savings goals.

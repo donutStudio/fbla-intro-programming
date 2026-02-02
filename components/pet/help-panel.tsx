@@ -17,7 +17,7 @@ export function HelpPanel() {
           <div className="space-y-2">
             <h3 className="text-foreground font-semibold">Quick Start</h3>
             <ul className="list-disc list-inside space-y-1">
-              <li>Create your pet by picking a type and name.</li>
+              <li>Create your pet by picking a type, name, and appearance.</li>
               <li>Watch stats in the Pet Status card.</li>
               <li>Use Care Actions to feed, play, rest, clean, and visit the vet.</li>
               <li>Earn money by completing tasks in the Finance panel.</li>
