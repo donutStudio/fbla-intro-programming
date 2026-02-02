@@ -45,8 +45,16 @@ import {
 } from "@/components/ui/sheet";
 
 export function GameScreen() {
-  const { pet, updatePetStats, resetGame, balance, avatarMode, setAvatarMode } =
-    usePetStore();
+  const {
+    pet,
+    updatePetStats,
+    resetGame,
+    balance,
+    avatarMode,
+    setAvatarMode,
+    demoMode,
+    setDemoMode,
+  } = usePetStore();
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
@@ -88,6 +96,10 @@ export function GameScreen() {
                 }
               />
             </div>
+            <div className="hidden md:flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Demo Mode</span>
+              <Switch checked={demoMode} onCheckedChange={setDemoMode} />
+            </div>
 
             {/* Mobile menu */}
             <Sheet>
@@ -112,6 +124,10 @@ export function GameScreen() {
                         setAvatarMode(checked ? "dynamic" : "emoji")
                       }
                     />
+                  </div>
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span>Demo Mode</span>
+                    <Switch checked={demoMode} onCheckedChange={setDemoMode} />
                   </div>
                   <FinancePanel />
                 </div>

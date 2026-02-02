@@ -40,6 +40,8 @@ export function SetupScreen() {
   const createPet = usePetStore((state) => state.createPet);
   const avatarMode = usePetStore((state) => state.avatarMode);
   const setAvatarMode = usePetStore((state) => state.setAvatarMode);
+  const demoMode = usePetStore((state) => state.demoMode);
+  const setDemoMode = usePetStore((state) => state.setDemoMode);
 
   const handleCreate = () => {
     if (petName.trim() && selectedType) {
@@ -179,6 +181,23 @@ export function SetupScreen() {
                         onCheckedChange={(checked) =>
                           setAvatarMode(checked ? "dynamic" : "emoji")
                         }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Demo Mode
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Speed up stat decay for presentations
+                        </p>
+                      </div>
+                      <Switch
+                        checked={demoMode}
+                        onCheckedChange={setDemoMode}
                       />
                     </div>
                   </div>

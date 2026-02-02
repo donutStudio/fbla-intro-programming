@@ -77,6 +77,7 @@ export interface GameState {
   totalEarned: number;
   gameStarted: boolean;
   avatarMode: AvatarMode;
+  demoMode: boolean;
 }
 
 interface PetStore extends GameState {
@@ -84,6 +85,7 @@ interface PetStore extends GameState {
   createPet: (name: string, type: PetType, appearance: PetAppearance) => void;
   resetGame: () => void;
   setAvatarMode: (mode: AvatarMode) => void;
+  setDemoMode: (enabled: boolean) => void;
 
   // Care actions
   feedPet: (foodType: keyof typeof FOOD_OPTIONS) => ActionResult;
@@ -132,6 +134,7 @@ const initialState: GameState = {
   totalEarned: 0,
   gameStarted: false,
   avatarMode: "dynamic",
+  demoMode: false,
 };
 
 const DEFAULT_APPEARANCE: PetAppearance = {
@@ -160,15 +163,17 @@ export const usePetStore = create<PetStore>()(
       ...initialState,
 
       createPet: (name: string, type: PetType, appearance: PetAppearance) => {
+        const demoMode = get().demoMode;
+        const startingBalance = demoMode ? 250 : get().balance;
         set({
           pet: {
             name,
             type,
-            hunger: 70,
-            happiness: 80,
-            energy: 80,
-            health: 100,
-            cleanliness: 90,
+            hunger: demoMode ? 55 : 70,
+            happiness: demoMode ? 60 : 80,
+            energy: demoMode ? 60 : 80,
+            health: demoMode ? 85 : 100,
+            cleanliness: demoMode ? 60 : 90,
             age: 0,
             evolution: "baby",
             appearance,
@@ -177,6 +182,7 @@ export const usePetStore = create<PetStore>()(
             createdAt: Date.now(),
             lastInteraction: Date.now(),
           },
+          balance: startingBalance,
           gameStarted: true,
         });
       },
@@ -190,11 +196,16 @@ export const usePetStore = create<PetStore>()(
             completed: false,
           })),
           avatarMode: get().avatarMode,
+          demoMode: get().demoMode,
         });
       },
 
       setAvatarMode: (mode) => {
         set({ avatarMode: mode });
+      },
+
+      setDemoMode: (enabled) => {
+        set({ demoMode: enabled });
       },
 
       feedPet: (foodType) => {
@@ -431,10 +442,15 @@ export const usePetStore = create<PetStore>()(
         if (!state.pet) return;
 
         const now = Date.now();
-        const timeSinceLastUpdate = now - state.pet.lastUpdated;
-        const hoursPassed = timeSinceLastUpdate / (1000 * 60 * 60);
-        const demoScale = state.demoMode ? 360 : 1;
+        const timeSinceLastInteraction = now - state.pet.lastInteraction;
+        const hoursPassed = timeSinceLastInteraction / (1000 * 60 * 60);
+        const demoScale = state.demoMode ? 6 : 1;
 
+        // Stats decay over time
+        const decayRate = 2;
+        const decay = Math.floor(hoursPassed * decayRate * demoScale);
+
+        // Calculate age in days
         const daysPassed = Math.floor((now - state.pet.createdAt) / (1000 * 60 * 60 * 24));
         const evolution: PetEvolution = getEvolution(daysPassed);
 
