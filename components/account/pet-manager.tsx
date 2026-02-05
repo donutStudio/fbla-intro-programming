@@ -55,6 +55,8 @@ export function PetManager() {
   const deletePet = useAccountStore((state) => state.deletePet);
   const startPetCreation = useAccountStore((state) => state.startPetCreation);
   const setPetAccess = useAccountStore((state) => state.setPetAccess);
+  const showFriends = useAccountStore((state) => state.showFriends);
+  const logout = useAccountStore((state) => state.logout);
 
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -80,11 +82,26 @@ export function PetManager() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background p-6">
       <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <PawPrint className="h-5 w-5 text-primary" />
+            Your Pets
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={showFriends}>
+              Friends
+            </Button>
+            <Button variant="outline" onClick={logout}>
+              Log out
+            </Button>
+          </div>
+        </div>
+
         <Card className="shadow-sm border border-border/70 animate-in fade-in slide-in-from-top-4 duration-500">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <PawPrint className="h-5 w-5 text-primary" />
-              Your Pets
+              Manage Pets
             </CardTitle>
             <Button onClick={startPetCreation}>
               <PlusCircle className="h-4 w-4 mr-2" />
@@ -181,9 +198,8 @@ export function PetManager() {
                       className="mt-4 w-full"
                       size="sm"
                       onClick={() => selectPet(pet.id)}
-                      disabled={isActive && activePet?.id === pet.id}
                     >
-                      {isActive ? "Playing" : "Play"}
+                      {isActive ? "Return to pet" : "Play"}
                     </Button>
                   </div>
                 );
