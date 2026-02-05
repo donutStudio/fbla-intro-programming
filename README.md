@@ -2,7 +2,7 @@
 
 ## Project Overview
 PetPal is a virtual pet simulator that teaches responsible pet ownership and budgeting at the same time. You create a custom pet, design its appearance, watch its stats change over time, and make care decisions that influence mood, health, and growth. Every care action has a real in-game cost, so players must earn money, set savings goals, and balance essentials vs. fun. PetPal tracks expenses by category, visualizes spending trends, and includes an Ask PetPal assistant for recommendations. The pet evolves across life stages, earns new visual traits like wings, learns tricks, and reacts emotionally to how well it is treated.
-Players can also create local accounts to save their pets, log in from the same device, and connect with friends to view each other's pets.
+Players can also create local accounts to save multiple pets, log in from the same device, and connect with friends to view each other's pets.
 
 ## How to Run
 ### Requirements
@@ -30,8 +30,8 @@ pnpm start
 ```
 
 ## How to Play
-0. Create a local account (signup or login) so your pet is saved to your profile.
-1. Create and customize your pet (type, name, and appearance).
+0. Create a local account (signup or login) so your pets are saved to your profile.
+1. Use the Pet Manager to create, rename, or switch between pets.
 2. Monitor stats (hunger, happiness, energy, cleanliness, health).
 3. Use care actions (feed, play, rest, clean, vet) to keep your pet healthy.
 4. Complete tasks to earn money and set savings goals.
@@ -71,9 +71,9 @@ Time-based decay runs continuously, speeds up as your pet ages, and is accelerat
 - **Optional ML insight:** on-device probability scoring for next-best action.
 
 ## Accounts & Friends (Local)
-- **Accounts:** Sign up or log in to save your pet on the current device.
-- **Persistence:** Each account stores its own pet data and progress.
-- **Friends:** Send requests by username and view your friends' pets.
+- **Accounts:** Sign up or log in to save pets on the current device.
+- **Pet Manager:** Create, rename, delete, and switch between multiple pets.
+- **Friends:** Send requests by username and view your friends' active pets.
 
 ## Libraries and Templates
 - Next.js / React

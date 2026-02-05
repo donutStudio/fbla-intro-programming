@@ -13,19 +13,44 @@ export function AuthScreen() {
   const signUp = useAccountStore((state) => state.signUp);
   const login = useAccountStore((state) => state.login);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
 
+  const usernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
+  const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/;
+
   const handleLogin = () => {
+    setLoginError(null);
     const result = login(loginUsername, loginPassword);
     setAuthMessage(result.message);
+    if (!result.ok) {
+      setLoginError(result.message);
+    }
   };
 
   const handleSignup = () => {
+    setSignupError(null);
+    if (!usernameRegex.test(signupUsername.trim())) {
+      setSignupError(
+        "Username must be 3-16 characters and use letters, numbers, or _."
+      );
+      return;
+    }
+    if (!passwordRegex.test(signupPassword)) {
+      setSignupError(
+        "Password must be 6+ characters and include a letter + number."
+      );
+      return;
+    }
     const result = signUp(signupUsername, signupPassword);
     setAuthMessage(result.message);
+    if (!result.ok) {
+      setSignupError(result.message);
+    }
   };
 
   return (
@@ -75,9 +100,16 @@ export function AuthScreen() {
                     onChange={(event) => setLoginPassword(event.target.value)}
                   />
                 </div>
-                <Button className="w-full" onClick={handleLogin}>
+                <Button
+                  className="w-full"
+                  onClick={handleLogin}
+                  disabled={!loginUsername.trim() || !loginPassword}
+                >
                   Log in
                 </Button>
+                {loginError && (
+                  <p className="text-xs text-destructive">{loginError}</p>
+                )}
               </TabsContent>
 
               <TabsContent value="signup" className="mt-4 space-y-4">
@@ -100,9 +132,23 @@ export function AuthScreen() {
                     onChange={(event) => setSignupPassword(event.target.value)}
                   />
                 </div>
-                <Button className="w-full" onClick={handleSignup}>
+                <Button
+                  className="w-full"
+                  onClick={handleSignup}
+                  disabled={
+                    !usernameRegex.test(signupUsername.trim()) ||
+                    !passwordRegex.test(signupPassword)
+                  }
+                >
                   Create account
                 </Button>
+                <p className="text-xs text-muted-foreground">
+                  Username: 3-16 chars (letters, numbers, underscores). Password: 6+
+                  chars with a letter and number.
+                </p>
+                {signupError && (
+                  <p className="text-xs text-destructive">{signupError}</p>
+                )}
               </TabsContent>
             </Tabs>
 

@@ -126,7 +126,9 @@ export function FriendsPanel() {
             </p>
           )}
           {friends.map((friend) => {
-            const pet = friend.petSnapshot?.pet;
+            const activePet =
+              friend.pets.find((pet) => pet.id === friend.activePetId) ?? null;
+            const pet = activePet?.snapshot?.pet ?? null;
             return (
               <div
                 key={friend.id}

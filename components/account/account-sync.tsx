@@ -8,6 +8,12 @@ export function AccountSync() {
   const currentUserId = useAccountStore((state) => state.currentUserId);
   const loadSnapshot = usePetStore((state) => state.loadSnapshot);
   const getSnapshot = usePetStore((state) => state.getSnapshot);
+  const saveActivePetSnapshot = useAccountStore(
+    (state) => state.saveActivePetSnapshot
+  );
+  const activePetId = useAccountStore((state) =>
+    currentUserId ? state.accounts[currentUserId]?.activePetId ?? null : null
+  );
 
   useEffect(() => {
     if (!currentUserId) {
@@ -16,20 +22,23 @@ export function AccountSync() {
     }
 
     const snapshot =
-      useAccountStore.getState().accounts[currentUserId]?.petSnapshot ?? null;
+      useAccountStore
+        .getState()
+        .accounts[currentUserId]?.pets.find((pet) => pet.id === activePetId)
+        ?.snapshot ?? null;
     loadSnapshot(snapshot);
-  }, [currentUserId, loadSnapshot]);
+  }, [currentUserId, activePetId, loadSnapshot]);
 
   useEffect(() => {
     if (!currentUserId) return;
 
     const unsubscribe = usePetStore.subscribe(() => {
       const snapshot = getSnapshot();
-      useAccountStore.getState().savePetSnapshot(currentUserId, snapshot);
+      saveActivePetSnapshot(currentUserId, snapshot);
     });
 
     return unsubscribe;
-  }, [currentUserId, getSnapshot]);
+  }, [currentUserId, getSnapshot, saveActivePetSnapshot]);
 
   return null;
 }

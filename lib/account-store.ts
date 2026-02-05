@@ -3,20 +3,32 @@ import { persist } from "zustand/middleware";
 import type { PetGameSnapshot } from "@/lib/pet-store";
 import { usePetStore } from "@/lib/pet-store";
 
+export type AccountPet = {
+  id: string;
+  name: string;
+  type: string;
+  createdAt: number;
+  snapshot: PetGameSnapshot | null;
+};
+
 export type AccountRecord = {
   id: string;
   username: string;
   password: string;
   createdAt: number;
-  petSnapshot: PetGameSnapshot | null;
+  pets: AccountPet[];
+  activePetId: string | null;
   friends: string[];
   incomingRequests: string[];
   outgoingRequests: string[];
+  hasCompletedOnboarding: boolean;
 };
 
 type AccountState = {
   accounts: Record<string, AccountRecord>;
   currentUserId: string | null;
+  showPetManager: boolean;
+  showSetup: boolean;
 };
 
 type AccountActions = {
@@ -29,7 +41,14 @@ type AccountActions = {
     message: string;
   };
   logout: () => void;
-  savePetSnapshot: (userId: string, snapshot: PetGameSnapshot) => void;
+  saveActivePetSnapshot: (userId: string, snapshot: PetGameSnapshot) => void;
+  addPetFromSnapshot: (snapshot: PetGameSnapshot) => void;
+  renamePet: (petId: string, name: string) => { ok: boolean; message: string };
+  deletePet: (petId: string) => void;
+  selectPet: (petId: string) => void;
+  showManager: () => void;
+  startPetCreation: () => void;
+  completeOnboarding: () => void;
   sendFriendRequest: (targetUsername: string) => {
     ok: boolean;
     message: string;
@@ -39,6 +58,10 @@ type AccountActions = {
 };
 
 const normalizeUsername = (value: string) => value.trim().toLowerCase();
+const isValidUsername = (value: string) =>
+  /^[a-zA-Z0-9_]{3,16}$/.test(value.trim());
+const isValidPassword = (value: string) =>
+  /^(?=.*[a-zA-Z])(?=.*\d).{6,}$/.test(value);
 
 const findAccountByUsername = (
   accounts: Record<string, AccountRecord>,
@@ -48,19 +71,40 @@ const findAccountByUsername = (
     (account) => normalizeUsername(account.username) === normalizeUsername(username)
   );
 
+const normalizeAccount = (account: AccountRecord) => ({
+  ...account,
+  pets: account.pets ?? [],
+  activePetId: account.activePetId ?? null,
+  hasCompletedOnboarding: account.hasCompletedOnboarding ?? false,
+  friends: account.friends ?? [],
+  incomingRequests: account.incomingRequests ?? [],
+  outgoingRequests: account.outgoingRequests ?? [],
+});
+
 export const useAccountStore = create<AccountState & AccountActions>()(
   persist(
     (set, get) => ({
       accounts: {},
       currentUserId: null,
+      showPetManager: false,
+      showSetup: false,
 
       signUp: (username, password) => {
         const trimmedUsername = username.trim();
         if (!trimmedUsername) {
           return { ok: false, message: "Username is required." };
         }
-        if (password.length < 4) {
-          return { ok: false, message: "Password must be at least 4 characters." };
+        if (!isValidUsername(trimmedUsername)) {
+          return {
+            ok: false,
+            message: "Username must be 3-16 characters and use letters, numbers, or _.",
+          };
+        }
+        if (!isValidPassword(password)) {
+          return {
+            ok: false,
+            message: "Password must be 6+ characters and include a letter + number.",
+          };
         }
 
         const state = get();
@@ -75,10 +119,12 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           username: trimmedUsername,
           password,
           createdAt: Date.now(),
-          petSnapshot: null,
+          pets: [],
+          activePetId: null,
           friends: [],
           incomingRequests: [],
           outgoingRequests: [],
+          hasCompletedOnboarding: false,
         };
 
         set({
@@ -87,6 +133,8 @@ export const useAccountStore = create<AccountState & AccountActions>()(
             [id]: newAccount,
           },
           currentUserId: id,
+          showPetManager: false,
+          showSetup: true,
         });
 
         usePetStore.getState().loadSnapshot(null);
@@ -100,23 +148,209 @@ export const useAccountStore = create<AccountState & AccountActions>()(
         if (!account) {
           return { ok: false, message: "Account not found." };
         }
-        if (account.password !== password) {
+        const normalizedAccount = normalizeAccount(account);
+        if (normalizedAccount.password !== password) {
           return { ok: false, message: "Incorrect password." };
         }
 
-        set({ currentUserId: account.id });
-        usePetStore.getState().loadSnapshot(account.petSnapshot);
+        const shouldShowSetup =
+          !normalizedAccount.hasCompletedOnboarding &&
+          normalizedAccount.pets.length === 0;
+        const shouldShowManager = !shouldShowSetup;
+        const activePet =
+          normalizedAccount.pets.find(
+            (pet) => pet.id === normalizedAccount.activePetId
+          ) ?? null;
 
-        return { ok: true, message: `Welcome back, ${account.username}!` };
+        set({
+          accounts: {
+            ...state.accounts,
+            [account.id]: normalizedAccount,
+          },
+          currentUserId: normalizedAccount.id,
+          showPetManager: shouldShowManager,
+          showSetup: shouldShowSetup,
+        });
+        usePetStore.getState().loadSnapshot(activePet?.snapshot ?? null);
+
+        return { ok: true, message: `Welcome back, ${normalizedAccount.username}!` };
       },
 
       logout: () => {
-        set({ currentUserId: null });
+        set({ currentUserId: null, showPetManager: false, showSetup: false });
         usePetStore.getState().loadSnapshot(null);
       },
 
-      savePetSnapshot: (userId, snapshot) => {
+      saveActivePetSnapshot: (userId, snapshot) => {
         const state = get();
+        const account = state.accounts[userId];
+        if (!account) return;
+        if (!account.activePetId) return;
+
+        const pets = account.pets.map((pet) =>
+          pet.id === account.activePetId ? { ...pet, snapshot } : pet
+        );
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              pets,
+            },
+          },
+        });
+      },
+
+      addPetFromSnapshot: (snapshot) => {
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return;
+        const account = state.accounts[userId];
+        if (!account || !snapshot.pet) return;
+
+        const petId = `pet-${Date.now()}`;
+        const newPet: AccountPet = {
+          id: petId,
+          name: snapshot.pet.name,
+          type: snapshot.pet.type,
+          createdAt: Date.now(),
+          snapshot,
+        };
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              pets: [...account.pets, newPet],
+              activePetId: petId,
+              hasCompletedOnboarding: true,
+            },
+          },
+          showSetup: false,
+          showPetManager: false,
+        });
+      },
+
+      renamePet: (petId, name) => {
+        const trimmed = name.trim();
+        if (!trimmed || trimmed.length < 2) {
+          return { ok: false, message: "Pet name must be at least 2 characters." };
+        }
+
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return { ok: false, message: "Please log in first." };
+        const account = state.accounts[userId];
+        if (!account) return { ok: false, message: "Account not found." };
+
+        const pets = account.pets.map((pet) =>
+          pet.id === petId
+            ? {
+                ...pet,
+                name: trimmed,
+                snapshot: pet.snapshot?.pet
+                  ? {
+                      ...pet.snapshot,
+                      pet: {
+                        ...pet.snapshot.pet,
+                        name: trimmed,
+                      },
+                    }
+                  : pet.snapshot,
+              }
+            : pet
+        );
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              pets,
+            },
+          },
+        });
+
+        if (account.activePetId === petId && usePetStore.getState().pet) {
+          usePetStore.setState((current) =>
+            current.pet
+              ? {
+                  pet: {
+                    ...current.pet,
+                    name: trimmed,
+                  },
+                }
+              : {}
+          );
+        }
+
+        return { ok: true, message: "Pet renamed." };
+      },
+
+      deletePet: (petId) => {
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return;
+        const account = state.accounts[userId];
+        if (!account) return;
+
+        const pets = account.pets.filter((pet) => pet.id !== petId);
+        const nextActive =
+          account.activePetId === petId ? pets[0]?.id ?? null : account.activePetId;
+        const nextPet = pets.find((pet) => pet.id === nextActive) ?? null;
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              pets,
+              activePetId: nextActive,
+            },
+          },
+          showPetManager: true,
+        });
+
+        usePetStore.getState().loadSnapshot(nextPet?.snapshot ?? null);
+      },
+
+      selectPet: (petId) => {
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return;
+        const account = state.accounts[userId];
+        if (!account) return;
+        const pet = account.pets.find((entry) => entry.id === petId);
+        if (!pet) return;
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              activePetId: petId,
+            },
+          },
+          showPetManager: false,
+          showSetup: false,
+        });
+
+        usePetStore.getState().loadSnapshot(pet.snapshot ?? null);
+      },
+
+      showManager: () => {
+        set({ showPetManager: true, showSetup: false });
+      },
+
+      startPetCreation: () => {
+        set({ showSetup: true, showPetManager: false });
+      },
+
+      completeOnboarding: () => {
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return;
         const account = state.accounts[userId];
         if (!account) return;
         set({
@@ -124,9 +358,11 @@ export const useAccountStore = create<AccountState & AccountActions>()(
             ...state.accounts,
             [userId]: {
               ...account,
-              petSnapshot: snapshot,
+              hasCompletedOnboarding: true,
             },
           },
+          showSetup: false,
+          showPetManager: true,
         });
       },
 
@@ -242,6 +478,23 @@ export const useAccountStore = create<AccountState & AccountActions>()(
     }),
     {
       name: "petpal-accounts",
+      version: 1,
+      migrate: (state) => {
+        const data = state as AccountState & AccountActions;
+        const accounts = Object.fromEntries(
+          Object.entries(data.accounts ?? {}).map(([id, account]) => [
+            id,
+            normalizeAccount(account as AccountRecord),
+          ])
+        );
+
+        return {
+          ...data,
+          accounts,
+          showPetManager: data.showPetManager ?? false,
+          showSetup: data.showSetup ?? false,
+        };
+      },
     }
   )
 );

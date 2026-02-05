@@ -22,6 +22,7 @@ export function GameScreen() {
     currentUserId ? state.accounts[currentUserId] : null
   );
   const logout = useAccountStore((state) => state.logout);
+  const showManager = useAccountStore((state) => state.showManager);
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
@@ -49,6 +50,7 @@ export function GameScreen() {
         onReset={resetGame}
         username={currentUser?.username}
         onLogout={logout}
+        onManagePets={showManager}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6">

@@ -9,8 +9,15 @@ import {
 import { PawPrint } from "lucide-react";
 import { SetupStepOne } from "./setup/setup-step-one";
 import { SetupStepTwo } from "./setup/setup-step-two";
+import { useAccountStore } from "@/lib/account-store";
+import { Button } from "@/components/ui/button";
 
-export function SetupScreen() {
+type SetupScreenProps = {
+  showSkip?: boolean;
+  onSkip?: () => void;
+};
+
+export function SetupScreen({ showSkip = false, onSkip }: SetupScreenProps) {
   const [petName, setPetName] = useState("");
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [step, setStep] = useState(1);
@@ -26,10 +33,14 @@ export function SetupScreen() {
   const setAvatarMode = usePetStore((state) => state.setAvatarMode);
   const demoMode = usePetStore((state) => state.demoMode);
   const setDemoMode = usePetStore((state) => state.setDemoMode);
+  const addPetFromSnapshot = useAccountStore(
+    (state) => state.addPetFromSnapshot
+  );
 
   const handleCreate = () => {
     if (petName.trim() && selectedType) {
       createPet(petName.trim(), selectedType, appearance);
+      addPetFromSnapshot(usePetStore.getState().getSnapshot());
     }
   };
 
@@ -68,6 +79,18 @@ export function SetupScreen() {
             onBack={() => setStep(1)}
             onSubmit={handleCreate}
           />
+        )}
+
+        {showSkip && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSkip?.()}
+            >
+              Skip for now
+            </Button>
+          </div>
         )}
       </div>
     </div>
