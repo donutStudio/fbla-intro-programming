@@ -32,6 +32,7 @@ type GameHeaderProps = {
   username?: string | null;
   onLogout: () => void;
   onManagePets: () => void;
+  onManageFriends: () => void;
 };
 
 export function GameHeader({
@@ -44,6 +45,7 @@ export function GameHeader({
   username,
   onLogout,
   onManagePets,
+  onManageFriends,
 }: GameHeaderProps) {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
@@ -59,6 +61,9 @@ export function GameHeader({
               <span className="font-semibold text-foreground">{username}</span>
               <Button variant="outline" size="sm" onClick={onManagePets}>
                 My Pets
+              </Button>
+              <Button variant="outline" size="sm" onClick={onManageFriends}>
+                Friends
               </Button>
               <Button variant="outline" size="sm" onClick={onLogout}>
                 Log out
@@ -125,6 +130,16 @@ export function GameHeader({
                     onClick={onManagePets}
                   >
                     My Pets
+                  </Button>
+                )}
+                {username && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mb-2"
+                    onClick={onManageFriends}
+                  >
+                    Friends
                   </Button>
                 )}
                 {username && (

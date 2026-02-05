@@ -6,6 +6,7 @@ import { GameScreen } from "@/components/pet/game-screen";
 import { AuthScreen } from "@/components/account/auth-screen";
 import { AccountSync } from "@/components/account/account-sync";
 import { PetManager } from "@/components/account/pet-manager";
+import { FriendsManager } from "@/components/account/friends-manager";
 import { useAccountStore } from "@/lib/account-store";
 import { useEffect, useState } from "react";
 
@@ -17,6 +18,9 @@ export default function Home() {
   );
   const showPetManager = useAccountStore((state) => state.showPetManager);
   const showSetup = useAccountStore((state) => state.showSetup);
+  const showFriendsManager = useAccountStore(
+    (state) => state.showFriendsManager
+  );
   const completeOnboarding = useAccountStore((state) => state.completeOnboarding);
   const [mounted, setMounted] = useState(false);
 
@@ -47,6 +51,15 @@ export default function Home() {
       <>
         <AccountSync />
         <SetupScreen showSkip={showSkip} onSkip={completeOnboarding} />
+      </>
+    );
+  }
+
+  if (showFriendsManager) {
+    return (
+      <>
+        <AccountSync />
+        <FriendsManager />
       </>
     );
   }

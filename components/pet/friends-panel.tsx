@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, UserPlus } from "lucide-react";
+import { ChevronDown, Users, UserPlus } from "lucide-react";
 
 export function FriendsPanel() {
   const currentUserId = useAccountStore((state) => state.currentUserId);
@@ -18,8 +18,10 @@ export function FriendsPanel() {
   const sendFriendRequest = useAccountStore((state) => state.sendFriendRequest);
   const acceptFriendRequest = useAccountStore((state) => state.acceptFriendRequest);
   const declineFriendRequest = useAccountStore((state) => state.declineFriendRequest);
+  const addSharedPetLink = useAccountStore((state) => state.addSharedPetLink);
   const [friendUsername, setFriendUsername] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [expandedFriendId, setExpandedFriendId] = useState<string | null>(null);
 
   if (!currentAccount) return null;
 
@@ -126,28 +128,82 @@ export function FriendsPanel() {
             </p>
           )}
           {friends.map((friend) => {
-            const activePet =
-              friend.pets.find((pet) => pet.id === friend.activePetId) ?? null;
-            const pet = activePet?.snapshot?.pet ?? null;
+            const ownedPets = friend.pets.filter((pet) => pet.ownerId === friend.id);
             return (
               <div
                 key={friend.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border/60 p-4 bg-card/70 transition hover:shadow-md"
+                className="rounded-xl border border-border/60 p-4 bg-card/70 transition hover:shadow-md"
               >
-                <div>
-                  <p className="font-semibold text-foreground">
-                    {friend.username}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {pet
-                      ? `${pet.name} the ${pet.type} (${pet.evolution})`
-                      : "No pet created yet"}
-                  </p>
-                </div>
-                {pet && (
-                  <div className="flex gap-2 text-xs">
-                    <Badge variant="outline">Mood: {pet.mood}</Badge>
-                    <Badge variant="outline">Health: {pet.health}%</Badge>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between text-left"
+                  onClick={() =>
+                    setExpandedFriendId((prev) =>
+                      prev === friend.id ? null : friend.id
+                    )
+                  }
+                >
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {friend.username}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {ownedPets.length} pet{ownedPets.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition ${
+                      expandedFriendId === friend.id ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {expandedFriendId === friend.id && (
+                  <div className="mt-4 space-y-3">
+                    {ownedPets.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No pets created yet.
+                      </p>
+                    )}
+                    {ownedPets.map((pet) => {
+                      const access =
+                        pet.sharedWith?.[currentUserId ?? ""] ?? "none";
+                      const sharedEntryExists = currentAccount?.pets.some(
+                        (entry) =>
+                          entry.isShared &&
+                          entry.ownerId === friend.id &&
+                          entry.sourcePetId === pet.id
+                      );
+                      return (
+                        <div
+                          key={pet.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/60 p-3"
+                        >
+                          <div>
+                            <p className="font-medium text-foreground">
+                              {pet.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {pet.type}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <Badge variant="outline">
+                              Access: {access === "none" ? "private" : access}
+                            </Badge>
+                            {access === "edit" && !sharedEntryExists && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => addSharedPetLink(friend.id, pet.id)}
+                              >
+                                Add to My Pets
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -23,6 +23,7 @@ export function GameScreen() {
   );
   const logout = useAccountStore((state) => state.logout);
   const showManager = useAccountStore((state) => state.showManager);
+  const showFriends = useAccountStore((state) => state.showFriends);
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
@@ -51,6 +52,7 @@ export function GameScreen() {
         username={currentUser?.username}
         onLogout={logout}
         onManagePets={showManager}
+        onManageFriends={showFriends}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6">

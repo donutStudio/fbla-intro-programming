@@ -9,6 +9,11 @@ export type AccountPet = {
   type: string;
   createdAt: number;
   snapshot: PetGameSnapshot | null;
+  ownerId: string;
+  access: "owner" | "edit" | "view";
+  isShared: boolean;
+  sourcePetId?: string;
+  sharedWith: Record<string, "view" | "edit">;
 };
 
 export type AccountRecord = {
@@ -29,6 +34,7 @@ type AccountState = {
   currentUserId: string | null;
   showPetManager: boolean;
   showSetup: boolean;
+  showFriendsManager: boolean;
 };
 
 type AccountActions = {
@@ -47,8 +53,19 @@ type AccountActions = {
   deletePet: (petId: string) => void;
   selectPet: (petId: string) => void;
   showManager: () => void;
+  showFriends: () => void;
   startPetCreation: () => void;
   completeOnboarding: () => void;
+  setPetAccess: (
+    petId: string,
+    friendId: string,
+    access: "view" | "edit" | "none"
+  ) => void;
+  addSharedPetLink: (
+    ownerId: string,
+    petId: string,
+    targetUserId?: string
+  ) => void;
   sendFriendRequest: (targetUsername: string) => {
     ok: boolean;
     message: string;
@@ -71,9 +88,22 @@ const findAccountByUsername = (
     (account) => normalizeUsername(account.username) === normalizeUsername(username)
   );
 
+const normalizePet = (pet: AccountPet, ownerId: string): AccountPet => {
+  const resolvedOwner = pet.ownerId ?? ownerId;
+  const isShared = pet.isShared ?? resolvedOwner !== ownerId;
+
+  return {
+    ...pet,
+    ownerId: resolvedOwner,
+    access: pet.access ?? (isShared ? "view" : "owner"),
+    isShared,
+    sharedWith: pet.sharedWith ?? {},
+  };
+};
+
 const normalizeAccount = (account: AccountRecord) => ({
   ...account,
-  pets: account.pets ?? [],
+  pets: (account.pets ?? []).map((pet) => normalizePet(pet, account.id)),
   activePetId: account.activePetId ?? null,
   hasCompletedOnboarding: account.hasCompletedOnboarding ?? false,
   friends: account.friends ?? [],
@@ -88,6 +118,7 @@ export const useAccountStore = create<AccountState & AccountActions>()(
       currentUserId: null,
       showPetManager: false,
       showSetup: false,
+      showFriendsManager: false,
 
       signUp: (username, password) => {
         const trimmedUsername = username.trim();
@@ -135,6 +166,7 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           currentUserId: id,
           showPetManager: false,
           showSetup: true,
+          showFriendsManager: false,
         });
 
         usePetStore.getState().loadSnapshot(null);
@@ -170,6 +202,7 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           currentUserId: normalizedAccount.id,
           showPetManager: shouldShowManager,
           showSetup: shouldShowSetup,
+          showFriendsManager: false,
         });
         usePetStore.getState().loadSnapshot(activePet?.snapshot ?? null);
 
@@ -177,7 +210,12 @@ export const useAccountStore = create<AccountState & AccountActions>()(
       },
 
       logout: () => {
-        set({ currentUserId: null, showPetManager: false, showSetup: false });
+        set({
+          currentUserId: null,
+          showPetManager: false,
+          showSetup: false,
+          showFriendsManager: false,
+        });
         usePetStore.getState().loadSnapshot(null);
       },
 
@@ -186,6 +224,56 @@ export const useAccountStore = create<AccountState & AccountActions>()(
         const account = state.accounts[userId];
         if (!account) return;
         if (!account.activePetId) return;
+
+        const activePet = account.pets.find(
+          (pet) => pet.id === account.activePetId
+        );
+        if (!activePet) return;
+
+        const updatePetSnapshot = (
+          targetAccountId: string,
+          targetPetId: string
+        ) => {
+          const targetAccount = get().accounts[targetAccountId];
+          if (!targetAccount) return;
+          const name = snapshot.pet?.name;
+          const type = snapshot.pet?.type;
+          const updatedPets = targetAccount.pets.map((pet) =>
+            pet.id === targetPetId
+              ? {
+                  ...pet,
+                  snapshot,
+                  name: name ?? pet.name,
+                  type: type ?? pet.type,
+                }
+              : pet
+          );
+          set({
+            accounts: {
+              ...get().accounts,
+              [targetAccountId]: {
+                ...targetAccount,
+                pets: updatedPets,
+              },
+            },
+          });
+        };
+
+        if (activePet.isShared && activePet.sourcePetId && activePet.ownerId) {
+          updatePetSnapshot(activePet.ownerId, activePet.sourcePetId);
+          Object.values(get().accounts).forEach((accountEntry) => {
+            const sharedMatch = accountEntry.pets.find(
+              (pet) =>
+                pet.isShared &&
+                pet.ownerId === activePet.ownerId &&
+                pet.sourcePetId === activePet.sourcePetId
+            );
+            if (sharedMatch) {
+              updatePetSnapshot(accountEntry.id, sharedMatch.id);
+            }
+          });
+          return;
+        }
 
         const pets = account.pets.map((pet) =>
           pet.id === account.activePetId ? { ...pet, snapshot } : pet
@@ -215,6 +303,10 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           type: snapshot.pet.type,
           createdAt: Date.now(),
           snapshot,
+          ownerId: account.id,
+          access: "owner",
+          isShared: false,
+          sharedWith: {},
         };
 
         set({
@@ -295,6 +387,7 @@ export const useAccountStore = create<AccountState & AccountActions>()(
         const account = state.accounts[userId];
         if (!account) return;
 
+        const petToDelete = account.pets.find((pet) => pet.id === petId);
         const pets = account.pets.filter((pet) => pet.id !== petId);
         const nextActive =
           account.activePetId === petId ? pets[0]?.id ?? null : account.activePetId;
@@ -313,6 +406,30 @@ export const useAccountStore = create<AccountState & AccountActions>()(
         });
 
         usePetStore.getState().loadSnapshot(nextPet?.snapshot ?? null);
+
+        if (petToDelete && !petToDelete.isShared) {
+          Object.values(state.accounts).forEach((accountEntry) => {
+            const updatedPets = accountEntry.pets.filter(
+              (pet) =>
+                !(
+                  pet.isShared &&
+                  pet.ownerId === petToDelete.ownerId &&
+                  pet.sourcePetId === petToDelete.id
+                )
+            );
+            if (updatedPets.length !== accountEntry.pets.length) {
+              set({
+                accounts: {
+                  ...get().accounts,
+                  [accountEntry.id]: {
+                    ...accountEntry,
+                    pets: updatedPets,
+                  },
+                },
+              });
+            }
+          });
+        }
       },
 
       selectPet: (petId) => {
@@ -340,11 +457,15 @@ export const useAccountStore = create<AccountState & AccountActions>()(
       },
 
       showManager: () => {
-        set({ showPetManager: true, showSetup: false });
+        set({ showPetManager: true, showSetup: false, showFriendsManager: false });
+      },
+
+      showFriends: () => {
+        set({ showFriendsManager: true, showPetManager: false, showSetup: false });
       },
 
       startPetCreation: () => {
-        set({ showSetup: true, showPetManager: false });
+        set({ showSetup: true, showPetManager: false, showFriendsManager: false });
       },
 
       completeOnboarding: () => {
@@ -363,6 +484,103 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           },
           showSetup: false,
           showPetManager: true,
+          showFriendsManager: false,
+        });
+      },
+
+      setPetAccess: (petId, friendId, access) => {
+        const state = get();
+        const userId = state.currentUserId;
+        if (!userId) return;
+        const account = state.accounts[userId];
+        if (!account) return;
+
+        const pets = account.pets.map((pet) => {
+          if (pet.id !== petId) return pet;
+          if (pet.isShared) return pet;
+
+          const sharedWith = { ...pet.sharedWith };
+          if (access === "none") {
+            delete sharedWith[friendId];
+          } else {
+            sharedWith[friendId] = access;
+          }
+          return { ...pet, sharedWith };
+        });
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...account,
+              pets,
+            },
+          },
+        });
+
+        if (access === "edit") {
+          get().addSharedPetLink(userId, petId, friendId);
+        } else {
+          const friendAccount = state.accounts[friendId];
+          if (friendAccount) {
+            set({
+              accounts: {
+                ...get().accounts,
+                [friendId]: {
+                  ...friendAccount,
+                  pets: friendAccount.pets.filter(
+                    (pet) =>
+                      !(
+                        pet.isShared &&
+                        pet.ownerId === userId &&
+                        pet.sourcePetId === petId
+                      )
+                  ),
+                },
+              },
+            });
+          }
+        }
+      },
+
+      addSharedPetLink: (ownerId, petId, targetUserId) => {
+        const state = get();
+        const userId = targetUserId ?? state.currentUserId;
+        if (!userId) return;
+        const ownerAccount = state.accounts[ownerId];
+        const currentAccount = state.accounts[userId];
+        if (!ownerAccount || !currentAccount) return;
+
+        const ownerPet = ownerAccount.pets.find((pet) => pet.id === petId);
+        if (!ownerPet) return;
+
+        const exists = currentAccount.pets.some(
+          (pet) =>
+            pet.isShared && pet.ownerId === ownerId && pet.sourcePetId === petId
+        );
+        if (exists) return;
+
+        const sharedPet: AccountPet = {
+          id: `shared-${ownerId}-${petId}`,
+          name: ownerPet.name,
+          type: ownerPet.type,
+          createdAt: ownerPet.createdAt,
+          snapshot: ownerPet.snapshot,
+          ownerId,
+          access: "edit",
+          isShared: true,
+          sourcePetId: petId,
+          sharedWith: {},
+        };
+
+        set({
+          accounts: {
+            ...state.accounts,
+            [userId]: {
+              ...currentAccount,
+              pets: [...currentAccount.pets, sharedPet],
+            },
+          },
         });
       },
 
@@ -493,6 +711,7 @@ export const useAccountStore = create<AccountState & AccountActions>()(
           accounts,
           showPetManager: data.showPetManager ?? false,
           showSetup: data.showSetup ?? false,
+          showFriendsManager: data.showFriendsManager ?? false,
         };
       },
     }

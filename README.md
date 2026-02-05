@@ -73,7 +73,7 @@ Time-based decay runs continuously, speeds up as your pet ages, and is accelerat
 ## Accounts & Friends (Local)
 - **Accounts:** Sign up or log in to save pets on the current device.
 - **Pet Manager:** Create, rename, delete, and switch between multiple pets.
-- **Friends:** Send requests by username and view your friends' active pets.
+- **Friends:** Send requests by username, view friends' pets, and share edit access.
 
 ## Libraries and Templates
 - Next.js / React

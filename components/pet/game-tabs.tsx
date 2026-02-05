@@ -5,7 +5,6 @@ import {
   HelpCircle,
   MessageSquare,
   Sparkles,
-  Users,
   Wand2,
 } from "lucide-react";
 import { AnalyticsDashboard } from "./analytics-dashboard";
@@ -14,7 +13,6 @@ import { HelpPanel } from "./help-panel";
 import { AboutPanel } from "./about-panel";
 import { AICustomizer } from "./ai-customizer";
 import { CareTab } from "./care-tab";
-import { FriendsPanel } from "./friends-panel";
 
 type GameTabsProps = {
   activeTab: string;
@@ -28,7 +26,6 @@ const TAB_ITEMS = [
   { value: "analytics", label: "Analytics", icon: BarChart3 },
   { value: "ask", label: "Ask PetPal", icon: MessageSquare },
   { value: "customize", label: "Customize", icon: Wand2 },
-  { value: "friends", label: "Friends", icon: Users },
   { value: "help", label: "Help", icon: HelpCircle },
   { value: "about", label: "About", icon: Sparkles },
 ] as const;
@@ -67,10 +64,6 @@ export function GameTabs({
 
       <TabsContent value="customize" className="mt-6">
         <AICustomizer />
-      </TabsContent>
-
-      <TabsContent value="friends" className="mt-6">
-        <FriendsPanel />
       </TabsContent>
 
       <TabsContent value="help" className="mt-6">
