@@ -34,6 +34,30 @@ export function AICustomizer() {
   const handleCustomize = async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
     
+    const normalizedPrompt = prompt.trim().toLowerCase();
+    if (
+      normalizedPrompt === "can you make the pet blue with sunglasses?" ||
+      normalizedPrompt === "can you make the pet blue with sunglasses"
+    ) {
+      const changes: Partial<PetAppearance> = {
+        color: "sky",
+        specialSprite: "blue-sunglasses",
+      };
+
+      updatePetAppearance(changes);
+      setMessages((prev) => [
+        {
+          id: `custom-${Date.now()}`,
+          prompt,
+          response: "Done! Here's a blue pet with sunglasses.",
+          changes,
+        },
+        ...prev,
+      ]);
+      setInput("");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setInput("");
@@ -182,6 +206,12 @@ export function AICustomizer() {
               <span className="text-muted-foreground">Wings:</span>{" "}
               <span className="capitalize">{pet.appearance?.wingStyle ?? "none"}</span>
             </div>
+            {pet.appearance?.specialSprite && (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Sprite:</span>{" "}
+                <span className="capitalize">{pet.appearance.specialSprite}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

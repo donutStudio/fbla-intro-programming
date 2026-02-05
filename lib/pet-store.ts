@@ -93,7 +93,9 @@ interface PetStore extends GameState {
   // Financial actions
   completeTask: (taskId: string) => ActionResult;
   setSavingsGoal: (amount: number) => ActionResult;
-  addTask: (task: Omit<Task, "id" | "completed" | "createdAt">) => ActionResult;
+  addTask: (
+    task: Omit<Task, "id" | "completed" | "createdAt" | "availableAt" | "cooldownMs">
+  ) => ActionResult;
 
   // Utility actions
   updatePetStats: () => void;
@@ -112,7 +114,8 @@ interface PetStore extends GameState {
   loadSnapshot: (snapshot: GameState | null) => void;
 }
 
-const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt">[] = [
+const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt" | "availableAt" | "cooldownMs">[] =
+  [
   { name: "Clean your room", reward: 10 },
   { name: "Do homework", reward: 15 },
   { name: "Help with dishes", reward: 8 },
@@ -120,13 +123,29 @@ const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt">[] = [
   { name: "Read for 30 minutes", reward: 10 },
 ];
 
-const buildTaskList = () =>
-  DEFAULT_TASKS.map((task, index) => ({
+const getTaskDelayMs = (reward: number) => {
+  const baseDelay = reward * 1000;
+  return Math.min(60000, Math.max(2000, baseDelay));
+};
+
+const buildTask = (
+  task: Omit<Task, "id" | "completed" | "createdAt" | "availableAt" | "cooldownMs">,
+  id: string
+) => {
+  const createdAt = Date.now();
+  const cooldownMs = getTaskDelayMs(task.reward);
+  return {
     ...task,
-    id: `task-${index}`,
+    id,
     completed: false,
-    createdAt: Date.now(),
-  }));
+    createdAt,
+    cooldownMs,
+    availableAt: createdAt + cooldownMs,
+  };
+};
+
+const buildTaskList = () =>
+  DEFAULT_TASKS.map((task, index) => buildTask(task, `task-${index}`));
 
 export type PetGameSnapshot = GameState;
 
@@ -384,6 +403,14 @@ export const usePetStore = create<PetStore>()(
         if (!task || task.completed) {
           return { ok: false, message: "Task already completed." };
         }
+        const now = Date.now();
+        if (now < task.availableAt) {
+          const secondsRemaining = Math.ceil((task.availableAt - now) / 1000);
+          return {
+            ok: false,
+            message: `Task will be ready in ${secondsRemaining}s.`,
+          };
+        }
 
         let badges = state.pet?.badges || [];
         if (state.pet && !badges.includes("Hard Worker")) {
@@ -431,13 +458,7 @@ export const usePetStore = create<PetStore>()(
         if (!task.name.trim()) {
           return { ok: false, message: "Task name is required." };
         }
-
-        const newTask = {
-          ...task,
-          id: `task-${Date.now()}`,
-          completed: false,
-          createdAt: Date.now(),
-        };
+        const newTask = buildTask(task, `task-${Date.now()}`);
 
         set({
           tasks: [...get().tasks, newTask],
@@ -562,9 +583,23 @@ export const usePetStore = create<PetStore>()(
           return;
         }
 
+        const normalizedTasks =
+          snapshot.tasks?.map((task) => {
+            const cooldownMs = task.cooldownMs ?? getTaskDelayMs(task.reward);
+            const createdAt = task.createdAt ?? Date.now();
+            const availableAt = task.availableAt ?? createdAt + cooldownMs;
+            return {
+              ...task,
+              createdAt,
+              cooldownMs,
+              availableAt,
+            };
+          }) ?? [];
+
         set({
           ...buildInitialState(),
           ...snapshot,
+          tasks: normalizedTasks,
         });
       },
     }),
