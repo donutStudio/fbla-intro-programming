@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePetStore } from "@/lib/pet-store";
+import { useAccountStore } from "@/lib/account-store";
 import { GameHeader } from "./game-header";
 import { GameTabs } from "./game-tabs";
 
@@ -16,12 +17,17 @@ export function GameScreen() {
     demoMode,
     setDemoMode,
   } = usePetStore();
+  const currentUserId = useAccountStore((state) => state.currentUserId);
+  const currentUser = useAccountStore((state) =>
+    currentUserId ? state.accounts[currentUserId] : null
+  );
+  const logout = useAccountStore((state) => state.logout);
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
   useEffect(() => {
     updatePetStats();
-    const interval = setInterval(updatePetStats, demoMode ? 10000 : 60000);
+    const interval = setInterval(updatePetStats, demoMode ? 10000 : 45000);
     return () => clearInterval(interval);
   }, [updatePetStats, demoMode]);
 
@@ -41,6 +47,8 @@ export function GameScreen() {
         demoMode={demoMode}
         onToggleDemoMode={setDemoMode}
         onReset={resetGame}
+        username={currentUser?.username}
+        onLogout={logout}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6">

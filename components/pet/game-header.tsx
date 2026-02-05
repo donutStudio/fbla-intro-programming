@@ -29,6 +29,8 @@ type GameHeaderProps = {
   demoMode: boolean;
   onToggleDemoMode: (enabled: boolean) => void;
   onReset: () => void;
+  username?: string | null;
+  onLogout: () => void;
 };
 
 export function GameHeader({
@@ -38,6 +40,8 @@ export function GameHeader({
   demoMode,
   onToggleDemoMode,
   onReset,
+  username,
+  onLogout,
 }: GameHeaderProps) {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
@@ -48,6 +52,14 @@ export function GameHeader({
         </div>
 
         <div className="flex items-center gap-4">
+          {username && (
+            <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{username}</span>
+              <Button variant="outline" size="sm" onClick={onLogout}>
+                Log out
+              </Button>
+            </div>
+          )}
           <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10">
             <Wallet className="h-4 w-4 text-primary" />
             <span className="font-bold text-foreground">${balance}</span>
@@ -81,6 +93,12 @@ export function GameHeader({
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-4">
+                {username && (
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span>Signed in as</span>
+                    <span className="font-semibold">{username}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm mb-4">
                   <span>Dynamic Avatar</span>
                   <Switch
@@ -94,6 +112,16 @@ export function GameHeader({
                   <span>Demo Mode</span>
                   <Switch checked={demoMode} onCheckedChange={onToggleDemoMode} />
                 </div>
+                {username && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mb-4"
+                    onClick={onLogout}
+                  >
+                    Log out
+                  </Button>
+                )}
                 <FinancePanel />
               </div>
             </SheetContent>

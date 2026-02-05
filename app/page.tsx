@@ -3,10 +3,14 @@
 import { usePetStore } from "@/lib/pet-store";
 import { SetupScreen } from "@/components/pet/setup-screen";
 import { GameScreen } from "@/components/pet/game-screen";
+import { AuthScreen } from "@/components/account/auth-screen";
+import { AccountSync } from "@/components/account/account-sync";
+import { useAccountStore } from "@/lib/account-store";
 import { useEffect, useState } from "react";
 
 export default function Home() {
   const gameStarted = usePetStore((state) => state.gameStarted);
+  const currentUserId = useAccountStore((state) => state.currentUserId);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,5 +29,14 @@ export default function Home() {
     );
   }
 
-  return gameStarted ? <GameScreen /> : <SetupScreen />;
+  if (!currentUserId) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <>
+      <AccountSync />
+      {gameStarted ? <GameScreen /> : <SetupScreen />}
+    </>
+  );
 }

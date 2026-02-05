@@ -26,8 +26,8 @@ const clamp = (value: number, min = 0, max = 100) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
 export const getEvolution = (daysPassed: number): PetEvolution => {
-  if (daysPassed >= 7) return "adult";
-  if (daysPassed >= 3) return "teen";
+  if (daysPassed >= 5) return "adult";
+  if (daysPassed >= 2) return "teen";
   return "baby";
 };
 
@@ -89,17 +89,22 @@ export const getMoodState = (pet: Pet, previousMood?: PetMood): PetMood => {
   return "happy";
 };
 
-export const applyDecay = (pet: Pet, hoursPassed: number, demoScale: number) => {
-  const scaledHours = hoursPassed * demoScale;
-  const hunger = clamp(pet.hunger - scaledHours * 2);
-  const happiness = clamp(pet.happiness - scaledHours * 1.2);
-  const energy = clamp(pet.energy - scaledHours * 1.4);
-  const cleanliness = clamp(pet.cleanliness - scaledHours * 1.1);
+export const applyDecay = (
+  pet: Pet,
+  hoursPassed: number,
+  demoScale: number,
+  difficultyScale = 1
+) => {
+  const scaledHours = hoursPassed * demoScale * difficultyScale;
+  const hunger = clamp(pet.hunger - scaledHours * 2.4);
+  const happiness = clamp(pet.happiness - scaledHours * 1.5);
+  const energy = clamp(pet.energy - scaledHours * 1.7);
+  const cleanliness = clamp(pet.cleanliness - scaledHours * 1.4);
 
   let health = pet.health;
-  if (hunger < 35) health -= 3;
-  if (cleanliness < 35) health -= 2.5;
-  if (energy < 25) health -= 1.5;
+  if (hunger < 40) health -= 3.5 * difficultyScale;
+  if (cleanliness < 40) health -= 3 * difficultyScale;
+  if (energy < 30) health -= 2 * difficultyScale;
   if (hunger > 60 && cleanliness > 60) health += 0.5;
 
   const updatedPet = {
@@ -113,7 +118,10 @@ export const applyDecay = (pet: Pet, hoursPassed: number, demoScale: number) => 
 
   const events: PetEvent[] = [];
 
-  if (cleanliness < 30 && Math.random() < 0.2) {
+  if (
+    cleanliness < 35 &&
+    Math.random() < Math.min(0.25 * difficultyScale, 0.6)
+  ) {
     updatedPet.health = clamp(updatedPet.health - 8);
     updatedPet.happiness = clamp(updatedPet.happiness - 6);
     events.push({
@@ -124,7 +132,7 @@ export const applyDecay = (pet: Pet, hoursPassed: number, demoScale: number) => 
     });
   }
 
-  if (hunger < 20 && Math.random() < 0.15) {
+  if (hunger < 25 && Math.random() < Math.min(0.2 * difficultyScale, 0.5)) {
     updatedPet.energy = clamp(updatedPet.energy - 10);
     events.push({
       id: `event-${Date.now()}-stomach`,
