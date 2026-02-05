@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePetStore } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,12 @@ export function FinancePanel() {
   const [taskName, setTaskName] = useState("");
   const [taskReward, setTaskReward] = useState("");
   const [taskTouched, setTaskTouched] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const savingsProgress = Math.min((balance / savingsGoal) * 100, 100);
   const recentExpenses = expenses.slice(-5).reverse();
@@ -250,6 +256,11 @@ export function FinancePanel() {
                     >
                       {task.name}
                     </span>
+                    {!task.completed && task.availableAt > now && (
+                      <span className="text-xs text-muted-foreground">
+                        Ready in {Math.ceil((task.availableAt - now) / 1000)}s
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
@@ -263,13 +274,14 @@ export function FinancePanel() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs"
+                        disabled={task.availableAt > now}
                         onClick={() => {
                           const result = completeTask(task.id);
                           if (result.ok) toast.success(result.message);
                           else toast.error(result.message);
                         }}
                       >
-                        Done
+                        {task.availableAt > now ? "Wait" : "Done"}
                       </Button>
                     )}
                   </div>

@@ -233,6 +233,7 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
   const getMood = usePetStore((state) => state.getMood);
   const avatarMode = usePetStore((state) => state.avatarMode) as AvatarMode;
   const [showHearts, setShowHearts] = useState(false);
+  const [spriteLoadFailed, setSpriteLoadFailed] = useState(false);
 
   const mood = getMood();
 
@@ -248,6 +249,12 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
 
   const emoji = PET_EMOJIS[pet.type][pet.evolution];
   const appearance = pet.appearance ?? DEFAULT_APPEARANCE;
+  const showSpecialSprite = appearance.specialSprite === "blue-sunglasses";
+  const specialSpriteSrc = "/blue-sunglasses-pet.png";
+
+  useEffect(() => {
+    setSpriteLoadFailed(false);
+  }, [showSpecialSprite]);
 
   return (
     <div className="relative flex flex-col items-center">
@@ -274,7 +281,48 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
           isInteracting && "animate-pulse-glow scale-110"
         )}
       >
-        {avatarMode === "emoji" ? (
+        {showSpecialSprite ? (
+          <div className={cn("transition-transform", MOOD_EXPRESSIONS[mood])}>
+            <div className="flex items-center justify-center">
+              {!spriteLoadFailed ? (
+                <img
+                  src={specialSpriteSrc}
+                  alt="Blue pet with sunglasses"
+                  className="h-56 w-56 md:h-64 md:w-64 object-contain"
+                  onError={() => setSpriteLoadFailed(true)}
+                />
+              ) : (
+                <svg
+                  viewBox="0 0 200 200"
+                  className="h-56 w-56 md:h-64 md:w-64"
+                  role="img"
+                  aria-label="Blue pet with sunglasses placeholder"
+                >
+                  <circle cx="100" cy="100" r="80" fill="#60a5fa" />
+                  <circle cx="70" cy="90" r="25" fill="#111827" />
+                  <circle cx="130" cy="90" r="25" fill="#111827" />
+                  <rect x="90" y="85" width="20" height="10" fill="#111827" />
+                  <path
+                    d="M70 125c10 10 50 10 60 0"
+                    stroke="#1f2937"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <text
+                    x="100"
+                    y="180"
+                    textAnchor="middle"
+                    fontSize="10"
+                    fill="#1f2937"
+                  >
+                    Add /public/blue-sunglasses-pet.png
+                  </text>
+                </svg>
+              )}
+            </div>
+          </div>
+        ) : avatarMode === "emoji" ? (
           <>
             {/* Evolution glow effect */}
             {pet.evolution !== "baby" && (

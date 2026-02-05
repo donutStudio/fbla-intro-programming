@@ -17,6 +17,7 @@ export interface PetAppearance {
   eyeStyle: PetEyeStyle;
   accessory: PetAccessory;
   wingStyle: PetWingStyle;
+  specialSprite?: "blue-sunglasses";
 }
 
 export type ExpenseCategory = "food" | "toy" | "vet" | "supplies";
@@ -43,6 +44,8 @@ export interface Task {
   reward: number;
   completed: boolean;
   createdAt: number;
+  availableAt: number;
+  cooldownMs: number;
   completedAt?: number;
 }
 
