@@ -106,6 +106,10 @@ interface PetStore extends GameState {
   
   // Appearance actions
   updatePetAppearance: (appearance: Partial<PetAppearance>) => void;
+
+  // Snapshot actions
+  getSnapshot: () => GameState;
+  loadSnapshot: (snapshot: GameState | null) => void;
 }
 
 const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt">[] = [
@@ -124,7 +128,9 @@ const buildTaskList = () =>
     createdAt: Date.now(),
   }));
 
-const initialState: GameState = {
+export type PetGameSnapshot = GameState;
+
+const buildInitialState = (): GameState => ({
   pet: null,
   balance: 100,
   savingsGoal: 200,
@@ -139,7 +145,9 @@ const initialState: GameState = {
   gameStarted: false,
   avatarMode: "dynamic",
   demoMode: false,
-};
+});
+
+const initialState: GameState = buildInitialState();
 
 const DEFAULT_APPEARANCE: PetAppearance = {
   color: "rose",
@@ -173,11 +181,11 @@ export const usePetStore = create<PetStore>()(
           pet: {
             name,
             type,
-            hunger: demoMode ? 55 : 70,
-            happiness: demoMode ? 60 : 80,
-            energy: demoMode ? 60 : 80,
-            health: demoMode ? 85 : 100,
-            cleanliness: demoMode ? 60 : 90,
+            hunger: demoMode ? 50 : 65,
+            happiness: demoMode ? 55 : 75,
+            energy: demoMode ? 55 : 75,
+            health: demoMode ? 80 : 95,
+            cleanliness: demoMode ? 55 : 85,
             age: 0,
             evolution: "baby",
             mood: "happy",
@@ -195,13 +203,7 @@ export const usePetStore = create<PetStore>()(
 
       resetGame: () => {
         set({
-          ...initialState,
-          tasks: DEFAULT_TASKS.map((t, i) => ({
-            ...t,
-            id: `task-${i}`,
-            completed: false,
-            createdAt: Date.now(),
-          })),
+          ...buildInitialState(),
           avatarMode: get().avatarMode,
           demoMode: get().demoMode,
         });
@@ -451,11 +453,13 @@ export const usePetStore = create<PetStore>()(
         const now = Date.now();
         const timeSinceLastInteraction = now - state.pet.lastInteraction;
         const hoursPassed = timeSinceLastInteraction / (1000 * 60 * 60);
-        const demoScale = state.demoMode ? 6 : 1;
+        const baseScale = state.demoMode ? 6 : 1.4;
 
         // Calculate age in days
         const daysPassed = Math.floor((now - state.pet.createdAt) / (1000 * 60 * 60 * 24));
         const evolution: PetEvolution = getEvolution(daysPassed);
+        const difficultyScale =
+          1 + Math.min(daysPassed, 14) * 0.06 + (evolution === "adult" ? 0.1 : 0);
 
         const badges = [...state.pet.badges];
         if (daysPassed >= 1 && !badges.includes("First Day")) {
@@ -465,7 +469,12 @@ export const usePetStore = create<PetStore>()(
           badges.push("Week Veteran");
         }
 
-        const { updatedPet, events } = applyDecay(state.pet, hoursPassed, demoScale);
+        const { updatedPet, events } = applyDecay(
+          state.pet,
+          hoursPassed,
+          baseScale,
+          difficultyScale
+        );
         updatedPet.age = daysPassed;
         updatedPet.evolution = evolution;
         updatedPet.badges = badges;
@@ -508,6 +517,54 @@ export const usePetStore = create<PetStore>()(
               ...appearance,
             },
           },
+        });
+      },
+
+      getSnapshot: () => {
+        const {
+          pet,
+          balance,
+          savingsGoal,
+          expenses,
+          earnings,
+          tasks,
+          statsHistory,
+          events,
+          chatMessages,
+          totalSpent,
+          totalEarned,
+          gameStarted,
+          avatarMode,
+          demoMode,
+        } = get();
+
+        return {
+          pet,
+          balance,
+          savingsGoal,
+          expenses,
+          earnings,
+          tasks,
+          statsHistory,
+          events,
+          chatMessages,
+          totalSpent,
+          totalEarned,
+          gameStarted,
+          avatarMode,
+          demoMode,
+        };
+      },
+
+      loadSnapshot: (snapshot) => {
+        if (!snapshot) {
+          set(buildInitialState());
+          return;
+        }
+
+        set({
+          ...buildInitialState(),
+          ...snapshot,
         });
       },
     }),
