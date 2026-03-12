@@ -22,7 +22,7 @@ export function SetupScreen({ showSkip = false, onSkip }: SetupScreenProps) {
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [step, setStep] = useState(1);
   const [appearance, setAppearance] = useState<PetAppearance>({
-    color: "rose",
+    color: "#ff6fa1",
     eyeStyle: "round",
     accessory: "none",
     wingStyle: "none",

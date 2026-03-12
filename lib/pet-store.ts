@@ -169,7 +169,7 @@ const buildInitialState = (): GameState => ({
 const initialState: GameState = buildInitialState();
 
 const DEFAULT_APPEARANCE: PetAppearance = {
-  color: "rose",
+  color: "#ff6fa1",
   eyeStyle: "round",
   accessory: "none",
   wingStyle: "none",
