@@ -47,6 +47,9 @@ public/pet-layers/
 
 2. Name each file with a stable ID, e.g. `cool-hat.png` → layer ID is `cool-hat`.
 
+If `public/pet-layers/` does not exist yet, AI customization still works for color-only prompts.
+Layer changes are only applied when the user explicitly asks for accessories and matching files exist.
+
 3. Add metadata in:
 
 - `lib/pet-layer-config.ts`

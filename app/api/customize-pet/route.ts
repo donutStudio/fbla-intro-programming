@@ -2,6 +2,8 @@ import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { readdir } from "node:fs/promises";
+import { constants } from "node:fs";
+import { access } from "node:fs/promises";
 import path from "node:path";
 import {
   MUTUALLY_EXCLUSIVE_SLOTS,
@@ -23,6 +25,14 @@ const imageExt = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
 const getAvailableLayers = async () => {
   const layerDir = path.join(process.cwd(), PET_LAYER_DIRECTORY);
+
+  try {
+    await access(layerDir, constants.R_OK);
+  } catch {
+    // No layer directory yet is a valid state; color-only customization should still work.
+    return [];
+  }
+
   const files = await readdir(layerDir);
 
   return files
@@ -75,12 +85,16 @@ Available color options:
 - rose, sky, emerald, amber, lavender
 
 Available image layers from /public/pet-layers:
-${availableLayers
-  .map(
-    (layer) =>
-      `- ${layer.id} (slot: ${layer.slot}, tags: ${layer.tags.join(", ")})`
-  )
-  .join("\n")}
+${
+  availableLayers.length > 0
+    ? availableLayers
+        .map(
+          (layer) =>
+            `- ${layer.id} (slot: ${layer.slot}, tags: ${layer.tags.join(", ")})`
+        )
+        .join("\n")
+    : "- none currently available"
+}
 
 Rules:
 - Keep layers logically compatible.
