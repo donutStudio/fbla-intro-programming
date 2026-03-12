@@ -5,80 +5,44 @@ import { usePetStore } from "@/lib/pet-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Wand2, Loader2 } from "lucide-react";
-import type { PetAppearance } from "@/lib/domain/types";
-
-interface CustomizationMessage {
-  id: string;
-  prompt: string;
-  response: string;
-  changes: Partial<PetAppearance>;
-}
+import { Wand2 } from "lucide-react";
+import {
+  CUSTOMIZATION_DISABLED_MESSAGE,
+  type CustomizePetResponse,
+} from "@/lib/domain/pet-customization";
 
 export function AICustomizer() {
-  const { pet, updatePetAppearance } = usePetStore();
+  const { pet } = usePetStore();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<CustomizationMessage[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   if (!pet) return null;
 
   const samplePrompts = [
     "Make my pet blue",
-    "Make my pet sky blue",
     "Add blue sunglasses",
     "Clear all layered accessories",
   ];
 
-  const handleCustomize = async (prompt: string) => {
-    if (!prompt.trim() || isLoading) return;
-    
-    setIsLoading(true);
-    setError(null);
-    setInput("");
+  const checkAvailability = async (prompt: string) => {
+    const trimmedPrompt = prompt.trim();
+    if (!trimmedPrompt) return;
 
     try {
       const response = await fetch("/api/customize-pet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
+          prompt: trimmedPrompt,
           currentAppearance: pet.appearance,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to get customization response");
-      }
-
-      const parsed = await response.json();
-      const { appearance, message } = parsed;
-
-      // Filter out null values and apply changes
-      const changes: Partial<PetAppearance> = {};
-      if (appearance.color) changes.color = appearance.color;
-      if (Array.isArray(appearance.layerIds)) changes.layerIds = appearance.layerIds;
-
-      // Apply the changes to the pet
-      if (Object.keys(changes).length > 0) {
-        updatePetAppearance(changes);
-      }
-
-      // Add message to history
-      setMessages((prev) => [
-        {
-          id: `custom-${Date.now()}`,
-          prompt,
-          response: message,
-          changes,
-        },
-        ...prev,
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      const parsed = (await response.json()) as CustomizePetResponse;
+      setStatusMessage(parsed.message);
+      setInput("");
+    } catch {
+      setStatusMessage(CUSTOMIZATION_DISABLED_MESSAGE);
     }
   };
 
@@ -88,47 +52,35 @@ export function AICustomizer() {
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-primary" />
-            AI Pet Customizer
+            Pet Customizer (Temporarily Disabled)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Describe how you want to customize your pet using natural language!
+            Natural-language customization is currently offline, but the endpoint and response
+            shape are still wired for future reactivation.
           </p>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g., Make my pet lavender and add sunglasses"
+              placeholder="Customization requests are currently unavailable"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !isLoading) handleCustomize(input);
+                if (e.key === "Enter") checkAvailability(input);
               }}
-              disabled={isLoading}
             />
-            <Button onClick={() => handleCustomize(input)} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Customize"
-              )}
+            <Button onClick={() => checkAvailability(input)} variant="secondary">
+              Check Status
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
             {samplePrompts.map((prompt) => (
-              <Button
-                key={prompt}
-                variant="outline"
-                size="sm"
-                onClick={() => handleCustomize(prompt)}
-                disabled={isLoading}
-              >
+              <Button key={prompt} variant="outline" size="sm" onClick={() => checkAvailability(prompt)}>
                 {prompt}
               </Button>
             ))}
           </div>
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          <p className="text-sm text-amber-600">{statusMessage ?? CUSTOMIZATION_DISABLED_MESSAGE}</p>
         </CardContent>
       </Card>
 
@@ -149,31 +101,6 @@ export function AICustomizer() {
           </div>
         </CardContent>
       </Card>
-
-      {messages.length > 0 && (
-        <div className="space-y-3">
-          {messages.map((msg) => (
-            <Card key={msg.id}>
-              <CardContent className="pt-4">
-                <p className="text-sm font-medium mb-1">You: {msg.prompt}</p>
-                <p className="text-sm text-muted-foreground">{msg.response}</p>
-                {Object.keys(msg.changes).length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {Object.entries(msg.changes).map(([key, value]) => (
-                      <span
-                        key={key}
-                        className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
-                      >
-                        {key}: {value}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

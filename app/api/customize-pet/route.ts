@@ -1,9 +1,5 @@
-import { generateObject } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { z } from "zod";
-import { readdir } from "node:fs/promises";
+import { readdir, access } from "node:fs/promises";
 import { constants } from "node:fs";
-import { access } from "node:fs/promises";
 import path from "node:path";
 import {
   MUTUALLY_EXCLUSIVE_SLOTS,
@@ -11,15 +7,11 @@ import {
   PET_LAYER_DIRECTORY,
   type PetLayerSlot,
 } from "@/lib/pet-layer-config";
-
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const appearanceSchema = z.object({
-  color: z.string().min(1).nullable(),
-  layerIds: z.array(z.string()).nullable(),
-});
+import {
+  CUSTOMIZATION_DISABLED_MESSAGE,
+  type CustomizePetRequest,
+  type CustomizePetResponse,
+} from "@/lib/domain/pet-customization";
 
 const imageExt = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
@@ -29,7 +21,6 @@ const getAvailableLayers = async () => {
   try {
     await access(layerDir, constants.R_OK);
   } catch {
-    // No layer directory yet is a valid state; color-only customization should still work.
     return [];
   }
 
@@ -69,65 +60,27 @@ const enforceLayerRules = (requestedLayerIds: string[], availableLayerIds: strin
 };
 
 export async function POST(req: Request) {
-  const { prompt, currentAppearance } = await req.json();
-
+  const body = (await req.json()) as CustomizePetRequest;
+  const prompt = body.prompt?.trim() ?? "";
   const availableLayers = await getAvailableLayers();
 
-  const result = await generateObject({
-    model: openai("gpt-4o-mini"),
-    system: `You customize a virtual pet that is rendered as an emoji with optional image layers.
+  // Keep the request/response contract and layer utility hooks in place so
+  // OpenAI (or another model provider) can be reintroduced with minimal changes.
+    void enforceLayerRules(
+    body.currentAppearance?.layerIds ?? [],
+    availableLayers.map((layer) => layer.id)
+  );
 
-Current appearance:
-- Color: ${currentAppearance?.color ?? "#ff6fa1"}
-- Active layer IDs: ${(currentAppearance?.layerIds ?? []).join(", ") || "none"}
-
-Color handling:
-- You may return any valid CSS color value (hex, rgb, hsl, named colors).
-- Prefer vivid, noticeable colors when the user asks for a color change.
-
-Available image layers from /public/pet-layers:
-${
-  availableLayers.length > 0
-    ? availableLayers
-        .map(
-          (layer) =>
-            `- ${layer.id} (slot: ${layer.slot}, tags: ${layer.tags.join(", ")})`
-        )
-        .join("\n")
-    : "- none currently available"
-}
-
-Rules:
-- Keep layers logically compatible.
-- For mutually exclusive slots (back, head, face, neck, body), choose at most one layer per slot.
-- Return color only when user asks for color change.
-- Return full layerIds array only when user asks to add/remove/swap/clear layered images.
-- If user says remove all accessories/layers, return layerIds as empty array.
-- If no layer change needed, return layerIds as null.
-- If no color change needed, return color as null.
-
-Respond with valid JSON only.`,
-    prompt,
-    schema: z.object({
-      appearance: appearanceSchema,
-      message: z.string().describe("A short friendly response explaining what changed."),
-    }),
-  });
-
-  const response = result.object;
-  const requestedLayerIds = response?.appearance?.layerIds ?? null;
-  const safeLayerIds = requestedLayerIds
-    ? enforceLayerRules(
-        requestedLayerIds,
-        availableLayers.map((layer) => layer.id)
-      )
-    : null;
-
-  return Response.json({
+  const response: CustomizePetResponse = {
     appearance: {
-      color: response?.appearance?.color ?? null,
-      layerIds: safeLayerIds,
+      color: null,
+      layerIds: null,
     },
-    message: response?.message ?? "Updated!",
-  });
+    message: prompt
+      ? `${CUSTOMIZATION_DISABLED_MESSAGE} Your request was saved as: "${prompt}".`
+      : CUSTOMIZATION_DISABLED_MESSAGE,
+    customizationAvailable: false,
+  };
+
+  return Response.json(response, { status: 503 });
 }
