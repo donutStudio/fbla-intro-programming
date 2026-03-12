@@ -74,8 +74,6 @@ export function SetupScreen({ showSkip = false, onSkip }: SetupScreenProps) {
             onAvatarModeChange={setAvatarMode}
             demoMode={demoMode}
             onToggleDemoMode={setDemoMode}
-            appearance={appearance}
-            onAppearanceChange={setAppearance}
             onBack={() => setStep(1)}
             onSubmit={handleCreate}
           />

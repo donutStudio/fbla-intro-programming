@@ -1,5 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
-import type { PetAppearance, PetType } from "@/lib/pet-store";
+import type { PetType } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +21,6 @@ type SetupStepTwoProps = {
   onAvatarModeChange: (mode: "dynamic" | "emoji") => void;
   demoMode: boolean;
   onToggleDemoMode: (enabled: boolean) => void;
-  appearance: PetAppearance;
-  onAppearanceChange: Dispatch<SetStateAction<PetAppearance>>;
   onBack: () => void;
   onSubmit: () => void;
 };
@@ -36,21 +33,10 @@ export function SetupStepTwo({
   onAvatarModeChange,
   demoMode,
   onToggleDemoMode,
-  appearance,
-  onAppearanceChange,
   onBack,
   onSubmit,
 }: SetupStepTwoProps) {
   const selectedPet = PET_OPTIONS.find((pet) => pet.type === selectedType);
-
-  const updateAppearance = <K extends keyof PetAppearance>(
-    key: K,
-    value: PetAppearance[K]
-  ) =>
-    onAppearanceChange((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
 
   return (
     <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -89,11 +75,11 @@ export function SetupStepTwo({
           </div>
 
           <div className="rounded-xl border border-border p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-foreground">Avatar Style</p>
                 <p className="text-xs text-muted-foreground">
-                  Use emoji mode, or dynamic mode with tint + layered accessories
+                  Dynamic mode enables AI color customization and layered accessories after setup.
                 </p>
               </div>
               <Switch
@@ -117,35 +103,9 @@ export function SetupStepTwo({
             </div>
           </div>
 
-          {avatarMode === "dynamic" && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="petTint" className="text-xs text-muted-foreground">
-                  Tint color
-                </Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    id="petTint"
-                    type="color"
-                    value={appearance.color || "#ff6fa1"}
-                    onChange={(e) => updateAppearance("color", e.target.value)}
-                    className="h-10 w-14 cursor-pointer p-1"
-                    aria-label="Choose pet tint color"
-                  />
-                  <Input
-                    value={appearance.color || ""}
-                    onChange={(e) => updateAppearance("color", e.target.value)}
-                    placeholder="#ff6fa1 or red"
-                    className="font-mono"
-                    aria-label="Pet tint color value"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Use any CSS color value. Tinting is intentionally strong so color changes are easy to see.
-                </p>
-              </div>
-            </div>
-          )}
+          <div className="rounded-xl border border-border p-3 text-xs text-muted-foreground">
+            Pets start with a default base color. Use AI Customize in-game to change to any color.
+          </div>
 
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1 bg-transparent" onClick={onBack}>
