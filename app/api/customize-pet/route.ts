@@ -17,7 +17,7 @@ const openai = createOpenAI({
 });
 
 const appearanceSchema = z.object({
-  color: z.enum(["rose", "sky", "emerald", "amber", "lavender"]).nullable(),
+  color: z.string().min(1).nullable(),
   layerIds: z.array(z.string()).nullable(),
 });
 
@@ -78,11 +78,12 @@ export async function POST(req: Request) {
     system: `You customize a virtual pet that is rendered as an emoji with optional image layers.
 
 Current appearance:
-- Color: ${currentAppearance?.color ?? "rose"}
+- Color: ${currentAppearance?.color ?? "#ff6fa1"}
 - Active layer IDs: ${(currentAppearance?.layerIds ?? []).join(", ") || "none"}
 
-Available color options:
-- rose, sky, emerald, amber, lavender
+Color handling:
+- You may return any valid CSS color value (hex, rgb, hsl, named colors).
+- Prefer vivid, noticeable colors when the user asks for a color change.
 
 Available image layers from /public/pet-layers:
 ${

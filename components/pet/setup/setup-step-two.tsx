@@ -1,5 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
-import type { PetAppearance, PetType } from "@/lib/pet-store";
+import type { PetType } from "@/lib/pet-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +10,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { Sparkles } from "lucide-react";
-import { APPEARANCE_OPTIONS, PET_OPTIONS } from "./pet-options";
+import { PET_OPTIONS } from "./pet-options";
 
 type SetupStepTwoProps = {
   petName: string;
@@ -23,8 +21,6 @@ type SetupStepTwoProps = {
   onAvatarModeChange: (mode: "dynamic" | "emoji") => void;
   demoMode: boolean;
   onToggleDemoMode: (enabled: boolean) => void;
-  appearance: PetAppearance;
-  onAppearanceChange: Dispatch<SetStateAction<PetAppearance>>;
   onBack: () => void;
   onSubmit: () => void;
 };
@@ -37,21 +33,10 @@ export function SetupStepTwo({
   onAvatarModeChange,
   demoMode,
   onToggleDemoMode,
-  appearance,
-  onAppearanceChange,
   onBack,
   onSubmit,
 }: SetupStepTwoProps) {
   const selectedPet = PET_OPTIONS.find((pet) => pet.type === selectedType);
-
-  const updateAppearance = <K extends keyof PetAppearance>(
-    key: K,
-    value: PetAppearance[K]
-  ) =>
-    onAppearanceChange((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
 
   return (
     <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -90,11 +75,11 @@ export function SetupStepTwo({
           </div>
 
           <div className="rounded-xl border border-border p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-foreground">Avatar Style</p>
                 <p className="text-xs text-muted-foreground">
-                  Use emoji mode, or dynamic mode with tint + layered accessories
+                  Dynamic mode enables AI color customization and layered accessories after setup.
                 </p>
               </div>
               <Switch
@@ -118,30 +103,9 @@ export function SetupStepTwo({
             </div>
           </div>
 
-          {avatarMode === "dynamic" && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Tint color</Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.color.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.color === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() => updateAppearance("color", option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="rounded-xl border border-border p-3 text-xs text-muted-foreground">
+            Pets start with a default base color. Use AI Customize in-game to change to any color.
+          </div>
 
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1 bg-transparent" onClick={onBack}>

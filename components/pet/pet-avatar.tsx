@@ -40,14 +40,6 @@ const MOOD_EXPRESSIONS: Record<PetMood, string> = {
   energetic: "animate-float",
 };
 
-const TINT_FILTER_MAP = {
-  rose: "hue-rotate(0deg) saturate(1)",
-  sky: "hue-rotate(170deg) saturate(1.15)",
-  emerald: "hue-rotate(70deg) saturate(1.2)",
-  amber: "hue-rotate(320deg) saturate(1.2)",
-  lavender: "hue-rotate(220deg) saturate(1.12)",
-} as const;
-
 const SLOT_LAYER_CLASS: Record<PetLayerSlot, string> = {
   back: "z-10 scale-[1.08]",
   body: "z-20",
@@ -55,6 +47,47 @@ const SLOT_LAYER_CLASS: Record<PetLayerSlot, string> = {
   head: "z-40 -translate-y-6 scale-[0.85]",
   face: "z-50 -translate-y-1 scale-[0.62]",
   extra: "z-[60]",
+};
+
+const DEFAULT_TINT = "#ff6fa1";
+
+const cssColorToRgb = (value: string) => {
+  if (typeof window === "undefined") return null;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#000";
+  ctx.fillStyle = value;
+  const normalized = ctx.fillStyle;
+
+  const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) return null;
+
+  return {
+    r: Number(match[1]),
+    g: Number(match[2]),
+    b: Number(match[3]),
+  };
+};
+
+const rgbToHue = ({ r, g, b }: { r: number; g: number; b: number }) => {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+
+  let hue = 0;
+  if (max === rn) hue = ((gn - bn) / delta) % 6;
+  else if (max === gn) hue = (bn - rn) / delta + 2;
+  else hue = (rn - gn) / delta + 4;
+
+  return Math.round(hue * 60);
 };
 
 export function PetAvatar({ isInteracting }: PetAvatarProps) {
@@ -79,8 +112,13 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
   const appearance = pet.appearance;
   const showDynamic = avatarMode === "dynamic";
 
+  const requestedTint = appearance.color || DEFAULT_TINT;
+  const tintRgb = useMemo(() => cssColorToRgb(requestedTint), [requestedTint]);
+  const tintColor = tintRgb ? requestedTint : DEFAULT_TINT;
+  const tintHue = useMemo(() => (tintRgb ? rgbToHue(tintRgb) : rgbToHue({ r: 255, g: 111, b: 161 })), [tintRgb]);
+
   const tintFilter = showDynamic
-    ? TINT_FILTER_MAP[appearance.color] ?? TINT_FILTER_MAP.rose
+    ? `grayscale(1) sepia(1) saturate(9000%) hue-rotate(${tintHue}deg) brightness(1.08) contrast(1.22)`
     : "none";
 
   const layerIds = appearance.layerIds ?? [];
@@ -143,7 +181,13 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
               mood === "tired" && "opacity-70",
               mood === "sick" && "grayscale"
             )}
-            style={{ filter: tintFilter }}
+            style={{
+              filter: tintFilter,
+              color: showDynamic ? tintColor : "inherit",
+              textShadow: showDynamic
+                ? `0 0 10px ${tintColor}, 0 0 24px ${tintColor}`
+                : "none",
+            }}
           >
             {emoji}
           </span>

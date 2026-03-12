@@ -7,7 +7,7 @@ export type PetMood =
   | "sick"
   | "energetic";
 export type PetEvolution = "baby" | "teen" | "adult";
-export type PetColor = "rose" | "sky" | "emerald" | "amber" | "lavender";
+export type PetColor = string;
 export type PetEyeStyle = "round" | "sparkle" | "sleepy";
 export type PetAccessory = "none" | "bow" | "hat" | "bandana";
 export type PetWingStyle = "none" | "angel" | "fairy";
