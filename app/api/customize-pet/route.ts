@@ -8,7 +8,7 @@ import {
   type PetLayerSlot,
 } from "@/lib/pet-layer-config";
 import {
-  CUSTOMIZATION_DISABLED_MESSAGE,
+  CUSTOMIZATION_ERROR_MESSAGE,
   type CustomizePetRequest,
   type CustomizePetResponse,
 } from "@/lib/domain/pet-customization";
@@ -59,28 +59,125 @@ const enforceLayerRules = (requestedLayerIds: string[], availableLayerIds: strin
   return Array.from(chosenBySlot.values());
 };
 
+const isValidCssColor = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  const hex = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const rgb = /^rgba?\((?:\s*\d{1,3}\s*,){2}\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i;
+  const hsl = /^hsla?\((?:\s*\d{1,3}\s*,){2}\s*\d{1,3}%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i;
+  const named = /^[a-z]+$/i;
+
+  return hex.test(trimmed) || rgb.test(trimmed) || hsl.test(trimmed) || named.test(trimmed);
+};
+
+const extractColorFromPrompt = async (prompt: string) => {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You extract pet icon colors from user requests. Respond with JSON only: {\"color\": string|null}. Return a valid CSS color in hex/rgb/hsl/named format if a color is requested, otherwise null.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "pet_color",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              color: {
+                type: ["string", "null"],
+              },
+            },
+            required: ["color"],
+            additionalProperties: false,
+          },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("OpenAI request failed");
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) return null;
+
+  const parsed = JSON.parse(raw) as { color: string | null };
+  if (!parsed.color || !isValidCssColor(parsed.color)) return null;
+  return parsed.color;
+};
+
 export async function POST(req: Request) {
   const body = (await req.json()) as CustomizePetRequest;
   const prompt = body.prompt?.trim() ?? "";
-  const availableLayers = await getAvailableLayers();
 
-  // Keep the request/response contract and layer utility hooks in place so
-  // OpenAI (or another model provider) can be reintroduced with minimal changes.
-    void enforceLayerRules(
+  if (!prompt) {
+    const emptyResponse: CustomizePetResponse = {
+      appearance: {
+        color: null,
+        layerIds: null,
+      },
+      message: "Tell me what color you want for your pet icon.",
+      customizationAvailable: true,
+    };
+    return Response.json(emptyResponse);
+  }
+
+  const availableLayers = await getAvailableLayers();
+  void enforceLayerRules(
     body.currentAppearance?.layerIds ?? [],
     availableLayers.map((layer) => layer.id)
   );
 
-  const response: CustomizePetResponse = {
-    appearance: {
-      color: null,
-      layerIds: null,
-    },
-    message: prompt
-      ? `${CUSTOMIZATION_DISABLED_MESSAGE} Your request was saved as: "${prompt}".`
-      : CUSTOMIZATION_DISABLED_MESSAGE,
-    customizationAvailable: false,
-  };
+  try {
+    const color = await extractColorFromPrompt(prompt);
 
-  return Response.json(response, { status: 503 });
+    const response: CustomizePetResponse = {
+      appearance: {
+        color,
+        layerIds: null,
+      },
+      message: color
+        ? `Updated your pet color to ${color}.`
+        : "I couldn't find a color in that request. Try something like 'make my pet pastel blue'.",
+      customizationAvailable: true,
+    };
+
+    return Response.json(response);
+  } catch {
+    const response: CustomizePetResponse = {
+      appearance: {
+        color: null,
+        layerIds: null,
+      },
+      message: CUSTOMIZATION_ERROR_MESSAGE,
+      customizationAvailable: false,
+    };
+
+    return Response.json(response, { status: 500 });
+  }
 }

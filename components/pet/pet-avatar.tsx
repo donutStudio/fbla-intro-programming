@@ -117,7 +117,9 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
   const tintColor = tintRgb ? requestedTint : DEFAULT_TINT;
   const tintHue = useMemo(() => (tintRgb ? rgbToHue(tintRgb) : rgbToHue({ r: 255, g: 111, b: 161 })), [tintRgb]);
 
-  const tintFilter = showDynamic
+  const hasCustomTint = (appearance.color ?? "").toLowerCase() !== DEFAULT_TINT;
+
+  const tintFilter = showDynamic && hasCustomTint
     ? `grayscale(1) sepia(1) saturate(9000%) hue-rotate(${tintHue}deg) brightness(1.08) contrast(1.22)`
     : "none";
 
@@ -178,14 +180,14 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
           <span
             className={cn(
               "absolute inset-0 z-30 flex items-center justify-center text-8xl md:text-9xl select-none transition-transform duration-300",
-              showDynamic && "mix-blend-multiply",
+              showDynamic && hasCustomTint && "mix-blend-multiply",
               mood === "tired" && "opacity-70",
               mood === "sick" && "grayscale"
             )}
             style={{
               filter: tintFilter,
-              color: showDynamic ? tintColor : "inherit",
-              textShadow: showDynamic
+              color: showDynamic && hasCustomTint ? tintColor : "inherit",
+              textShadow: showDynamic && hasCustomTint
                 ? `0 0 10px ${tintColor}, 0 0 24px ${tintColor}`
                 : "none",
             }}
