@@ -178,6 +178,7 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
           <span
             className={cn(
               "absolute inset-0 z-30 flex items-center justify-center text-8xl md:text-9xl select-none transition-transform duration-300",
+              showDynamic && "mix-blend-multiply",
               mood === "tired" && "opacity-70",
               mood === "sick" && "grayscale"
             )}
