@@ -17,6 +17,7 @@ export interface PetAppearance {
   eyeStyle: PetEyeStyle;
   accessory: PetAccessory;
   wingStyle: PetWingStyle;
+  layerIds?: string[];
   specialSprite?: "blue-sunglasses";
 }
 

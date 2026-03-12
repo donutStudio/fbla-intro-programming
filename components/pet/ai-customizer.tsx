@@ -26,38 +26,14 @@ export function AICustomizer() {
 
   const samplePrompts = [
     "Make my pet blue",
-    "Give my pet sparkly eyes",
-    "Add angel wings",
-    "Give my pet a cute bow",
+    "Make my pet sky blue",
+    "Add blue sunglasses",
+    "Clear all layered accessories",
   ];
 
   const handleCustomize = async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
     
-    const normalizedPrompt = prompt.trim().toLowerCase();
-    if (
-      normalizedPrompt === "can you make the pet blue with sunglasses?" ||
-      normalizedPrompt === "can you make the pet blue with sunglasses"
-    ) {
-      const changes: Partial<PetAppearance> = {
-        color: "sky",
-        specialSprite: "blue-sunglasses",
-      };
-
-      updatePetAppearance(changes);
-      setMessages((prev) => [
-        {
-          id: `custom-${Date.now()}`,
-          prompt,
-          response: "Done! Here's a blue pet with sunglasses.",
-          changes,
-        },
-        ...prev,
-      ]);
-      setInput("");
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     setInput("");
@@ -76,41 +52,13 @@ export function AICustomizer() {
         throw new Error("Failed to get customization response");
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullText += decoder.decode(value, { stream: true });
-      }
-
-      // Parse the JSON response from the streamed text
-      // The AI SDK streams JSON as text, so we need to parse it
-      let parsed;
-      try {
-        parsed = JSON.parse(fullText);
-      } catch {
-        // Try to extract JSON from the text if it's wrapped in other content
-        const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error("Could not parse response");
-        }
-      }
-
+      const parsed = await response.json();
       const { appearance, message } = parsed;
 
       // Filter out null values and apply changes
       const changes: Partial<PetAppearance> = {};
       if (appearance.color) changes.color = appearance.color;
-      if (appearance.eyeStyle) changes.eyeStyle = appearance.eyeStyle;
-      if (appearance.accessory) changes.accessory = appearance.accessory;
-      if (appearance.wingStyle) changes.wingStyle = appearance.wingStyle;
+      if (Array.isArray(appearance.layerIds)) changes.layerIds = appearance.layerIds;
 
       // Apply the changes to the pet
       if (Object.keys(changes).length > 0) {
@@ -149,7 +97,7 @@ export function AICustomizer() {
           </p>
           <div className="flex gap-2">
             <Input
-              placeholder="e.g., Make my pet purple with fairy wings..."
+              placeholder="e.g., Make my pet lavender and add sunglasses"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -194,24 +142,10 @@ export function AICustomizer() {
               <span className="text-muted-foreground">Color:</span>{" "}
               <span className="capitalize">{pet.appearance?.color ?? "rose"}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Eyes:</span>{" "}
-              <span className="capitalize">{pet.appearance?.eyeStyle ?? "round"}</span>
+            <div className="col-span-2">
+              <span className="text-muted-foreground">Layers:</span>{" "}
+              <span>{(pet.appearance?.layerIds ?? []).join(", ") || "none"}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Accessory:</span>{" "}
-              <span className="capitalize">{pet.appearance?.accessory ?? "none"}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Wings:</span>{" "}
-              <span className="capitalize">{pet.appearance?.wingStyle ?? "none"}</span>
-            </div>
-            {pet.appearance?.specialSprite && (
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Sprite:</span>{" "}
-                <span className="capitalize">{pet.appearance.specialSprite}</span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

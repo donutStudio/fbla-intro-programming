@@ -14,41 +14,26 @@ export const PET_OPTIONS: {
 
 export const APPEARANCE_OPTIONS = {
   color: [
-    { key: "charcoal", label: "Charcoal" },
-    { key: "golden", label: "Golden" },
-    { key: "cream", label: "Cream" },
-    { key: "sky", label: "Sky" },
     { key: "rose", label: "Rose" },
+    { key: "sky", label: "Sky" },
+    { key: "emerald", label: "Emerald" },
+    { key: "amber", label: "Amber" },
+    { key: "lavender", label: "Lavender" },
   ] as Array<{ key: PetAppearance["color"]; label: string }>,
-  pattern: [
-    { key: "solid", label: "Solid" },
-    { key: "spots", label: "Spots" },
-    { key: "stripes", label: "Stripes" },
-    { key: "patches", label: "Patches" },
-  ] as Array<{ key: PetAppearance["pattern"]; label: string }>,
+  eyeStyle: [
+    { key: "round", label: "Round" },
+    { key: "sparkle", label: "Sparkle" },
+    { key: "sleepy", label: "Sleepy" },
+  ] as Array<{ key: PetAppearance["eyeStyle"]; label: string }>,
   accessory: [
     { key: "none", label: "None" },
     { key: "bow", label: "Bow" },
-    { key: "collar", label: "Collar" },
     { key: "hat", label: "Hat" },
     { key: "bandana", label: "Bandana" },
   ] as Array<{ key: PetAppearance["accessory"]; label: string }>,
-  primaryTrait: [
-    { key: "wings", label: "Wings" },
-    { key: "crown", label: "Crown" },
-    { key: "cape", label: "Cape" },
-    { key: "horns", label: "Horns" },
-    { key: "backpack", label: "Backpack" },
-    { key: "sparkles", label: "Sparkles" },
+  wingStyle: [
     { key: "none", label: "None" },
-  ] as Array<{ key: PetAppearance["primaryTrait"]; label: string }>,
-  secondaryTrait: [
-    { key: "none", label: "None" },
-    { key: "wings", label: "Wings" },
-    { key: "crown", label: "Crown" },
-    { key: "cape", label: "Cape" },
-    { key: "horns", label: "Horns" },
-    { key: "backpack", label: "Backpack" },
-    { key: "sparkles", label: "Sparkles" },
-  ] as Array<{ key: PetAppearance["secondaryTrait"]; label: string }>,
+    { key: "angel", label: "Angel" },
+    { key: "fairy", label: "Fairy" },
+  ] as Array<{ key: PetAppearance["wingStyle"]; label: string }>,
 };

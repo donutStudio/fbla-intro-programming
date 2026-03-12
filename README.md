@@ -1,86 +1,84 @@
-# PetPal Virtual Pet + Financial Responsibility
+# PetPal
 
-## Project Overview
-PetPal is a virtual pet simulator that teaches responsible pet ownership and budgeting at the same time. You create a custom pet, design its appearance, watch its stats change over time, and make care decisions that influence mood, health, and growth. Every care action has a real in-game cost, so players must earn money, set savings goals, and balance essentials vs. fun. PetPal tracks expenses by category, visualizes spending trends, and includes an Ask PetPal assistant for recommendations. The pet evolves across life stages, earns new visual traits like wings, learns tricks, and reacts emotionally to how well it is treated.
-Players can also create local accounts to save multiple pets, log in from the same device, and connect with friends to view each other's pets.
+A simple virtual pet app built with Next.js.
 
-## How to Run
-### Requirements
+## 1) Requirements
+
 - Node.js 18+
-- pnpm (or npm/yarn)
+- pnpm (recommended) or npm
 
-### Install
+## 2) Install
+
 ```bash
 pnpm install
 ```
 
-### Development server
+## 3) Environment variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+## 4) Run the app
+
 ```bash
 pnpm dev
 ```
 
-### Production build
+Then open `http://localhost:3000`.
+
+---
+
+## Dynamic avatar setup (emoji + AI layers)
+
+Dynamic mode now uses the **same emoji pet**, with:
+- color tinting
+- optional layered images (like sunglasses/hat/scarf)
+
+### Add your own layer images
+
+1. Put image files in:
+
+```text
+public/pet-layers/
+```
+
+2. Name each file with a stable ID, e.g. `cool-hat.png` → layer ID is `cool-hat`.
+
+3. Add metadata in:
+
+- `lib/pet-layer-config.ts`
+
+That file controls:
+- layer labels/tags (what the LLM uses to choose a layer)
+- layer slot (`head`, `face`, `neck`, `back`, `body`, `extra`)
+- mutually exclusive slots to prevent overlapping conflicts
+
+### Where mutual exclusivity is configured
+
+- `MUTUALLY_EXCLUSIVE_SLOTS` in `lib/pet-layer-config.ts`
+
+By default, only one layer is allowed per exclusive slot, so combinations stay logical.
+
+### How AI chooses layers
+
+The API route:
+- reads files from `public/pet-layers`
+- sends available layers + tags + slots to the LLM
+- enforces slot conflict rules before applying changes
+
+Route file:
+- `app/api/customize-pet/route.ts`
+
+---
+
+## Helpful scripts
+
 ```bash
+pnpm dev
 pnpm build
-```
-
-### Start production
-```bash
 pnpm start
+pnpm lint
 ```
-
-## How to Play
-0. Create a local account (signup or login) so your pets are saved to your profile.
-1. Use the Pet Manager to create, rename, or switch between pets.
-2. Monitor stats (hunger, happiness, energy, cleanliness, health).
-3. Use care actions (feed, play, rest, clean, vet) to keep your pet healthy.
-4. Complete tasks to earn money and set savings goals.
-5. Review analytics and reports to understand spending habits.
-6. Visit the Friends tab to send requests and compare pets.
-
-### Stat Meaning & Decay
-- **Hunger:** drops over time; feed to restore.
-- **Happiness:** drops with neglect; play or clean to boost.
-- **Energy:** drops with time and play; rest restores energy.
-- **Cleanliness:** drops over time; low cleanliness hurts health.
-- **Health:** affected by hunger/cleanliness; vet visits restore health.
-
-Time-based decay runs continuously, speeds up as your pet ages, and is accelerated in Demo Mode.
-
-### Actions Available
-- **Feed:** costs money, increases hunger and happiness.
-- **Play:** costs money, boosts happiness, uses energy.
-- **Rest:** restores energy, slightly lowers hunger.
-- **Clean:** costs money, restores cleanliness.
-- **Vet:** costs money, restores health and gives a badge.
-
-### Money, Goals, and Savings
-- Tasks add earnings and raise your balance.
-- Spending is categorized (food, toys, vet, supplies).
-- Savings goals track progress and help keep a budget buffer.
-
-## Financial System
-- **Expense categories:** food, toys, vet, supplies.
-- **Tracking:** every expense is timestamped with category + description.
-- **Reporting:** analytics dashboard includes spending breakdowns, time-based charts, cost-per-day, and projections.
-- **Export:** CSV report downloads expense + earning history for documentation.
-
-## Intelligent Features
-- **Ask PetPal Q&A:** rules-based responses to budget, care, and mood questions.
-- **Recommendations:** data-driven suggestions with “Why this?” explanations.
-- **Optional ML insight:** on-device probability scoring for next-best action.
-
-## Accounts & Friends (Local)
-- **Accounts:** Sign up or log in to save pets on the current device.
-- **Pet Manager:** Create, rename, delete, and switch between multiple pets.
-- **Friends:** Send requests by username, view friends' pets, and share edit access.
-
-## Libraries and Templates
-- Next.js / React
-- Zustand (state management)
-- Recharts (charts)
-- Radix UI + shadcn/ui components
-- Tailwind CSS
-
-## Credits / Attributions
-- No external assets used beyond emoji and built-in icon libraries.
