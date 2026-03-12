@@ -140,7 +140,7 @@ export function AICustomizer() {
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <span className="text-muted-foreground">Color:</span>{" "}
-              <span className="capitalize">{pet.appearance?.color ?? "rose"}</span>
+              <span className="capitalize">{pet.appearance?.color ?? "#ff6fa1"}</span>
             </div>
             <div className="col-span-2">
               <span className="text-muted-foreground">Layers:</span>{" "}

@@ -13,13 +13,6 @@ export const PET_OPTIONS: {
 ];
 
 export const APPEARANCE_OPTIONS = {
-  color: [
-    { key: "rose", label: "Rose" },
-    { key: "sky", label: "Sky" },
-    { key: "emerald", label: "Emerald" },
-    { key: "amber", label: "Amber" },
-    { key: "lavender", label: "Lavender" },
-  ] as Array<{ key: PetAppearance["color"]; label: string }>,
   eyeStyle: [
     { key: "round", label: "Round" },
     { key: "sparkle", label: "Sparkle" },

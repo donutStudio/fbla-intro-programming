@@ -11,9 +11,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { Sparkles } from "lucide-react";
-import { APPEARANCE_OPTIONS, PET_OPTIONS } from "./pet-options";
+import { PET_OPTIONS } from "./pet-options";
 
 type SetupStepTwoProps = {
   petName: string;
@@ -121,24 +120,29 @@ export function SetupStepTwo({
           {avatarMode === "dynamic" && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Tint color</Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.color.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.color === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() => updateAppearance("color", option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <Label htmlFor="petTint" className="text-xs text-muted-foreground">
+                  Tint color
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="petTint"
+                    type="color"
+                    value={appearance.color || "#ff6fa1"}
+                    onChange={(e) => updateAppearance("color", e.target.value)}
+                    className="h-10 w-14 cursor-pointer p-1"
+                    aria-label="Choose pet tint color"
+                  />
+                  <Input
+                    value={appearance.color || ""}
+                    onChange={(e) => updateAppearance("color", e.target.value)}
+                    placeholder="#ff6fa1 or red"
+                    className="font-mono"
+                    aria-label="Pet tint color value"
+                  />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Use any CSS color value. Tinting is intentionally strong so color changes are easy to see.
+                </p>
               </div>
             </div>
           )}

@@ -40,13 +40,6 @@ const MOOD_EXPRESSIONS: Record<PetMood, string> = {
   energetic: "animate-float",
 };
 
-const TINT_FILTER_MAP = {
-  rose: "hue-rotate(0deg) saturate(1)",
-  sky: "hue-rotate(170deg) saturate(1.15)",
-  emerald: "hue-rotate(70deg) saturate(1.2)",
-  amber: "hue-rotate(320deg) saturate(1.2)",
-  lavender: "hue-rotate(220deg) saturate(1.12)",
-} as const;
 
 const SLOT_LAYER_CLASS: Record<PetLayerSlot, string> = {
   back: "z-10 scale-[1.08]",
@@ -79,9 +72,12 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
   const appearance = pet.appearance;
   const showDynamic = avatarMode === "dynamic";
 
-  const tintFilter = showDynamic
-    ? TINT_FILTER_MAP[appearance.color] ?? TINT_FILTER_MAP.rose
-    : "none";
+  const tintStyle = showDynamic
+    ? {
+        color: appearance.color || "#ff6fa1",
+        filter: "saturate(3) contrast(1.25) brightness(1.1)",
+      }
+    : { color: "inherit", filter: "none" };
 
   const layerIds = appearance.layerIds ?? [];
   const sortedLayerIds = useMemo(() => {
@@ -140,10 +136,11 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
           <span
             className={cn(
               "absolute inset-0 z-30 flex items-center justify-center text-8xl md:text-9xl select-none transition-transform duration-300",
+              showDynamic && "mix-blend-multiply",
               mood === "tired" && "opacity-70",
               mood === "sick" && "grayscale"
             )}
-            style={{ filter: tintFilter }}
+            style={tintStyle}
           >
             {emoji}
           </span>
