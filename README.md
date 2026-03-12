@@ -15,11 +15,7 @@ pnpm install
 
 ## 3) Environment variables
 
-Create a `.env.local` file in the project root:
-
-```bash
-OPENAI_API_KEY=your_openai_api_key_here
-```
+No required environment variables for local development.
 
 ## 4) Run the app
 
@@ -31,9 +27,9 @@ Then open `http://localhost:3000`.
 
 ---
 
-## Dynamic avatar setup (emoji + AI layers)
+## Dynamic avatar setup (emoji + layers)
 
-Dynamic mode now uses the **same emoji pet**, with:
+Dynamic mode uses the **same emoji pet**, with:
 - color tinting
 - optional layered images (like sunglasses/hat/scarf)
 
@@ -47,15 +43,12 @@ public/pet-layers/
 
 2. Name each file with a stable ID, e.g. `cool-hat.png` → layer ID is `cool-hat`.
 
-If `public/pet-layers/` does not exist yet, AI customization still works for color-only prompts.
-Layer changes are only applied when the user explicitly asks for accessories and matching files exist.
-
 3. Add metadata in:
 
 - `lib/pet-layer-config.ts`
 
 That file controls:
-- layer labels/tags (what the LLM uses to choose a layer)
+- layer labels/tags
 - layer slot (`head`, `face`, `neck`, `back`, `body`, `extra`)
 - mutually exclusive slots to prevent overlapping conflicts
 
@@ -65,15 +58,12 @@ That file controls:
 
 By default, only one layer is allowed per exclusive slot, so combinations stay logical.
 
-### How AI chooses layers
+### Customizer route status
 
-The API route:
-- reads files from `public/pet-layers`
-- sends available layers + tags + slots to the LLM
-- enforces slot conflict rules before applying changes
-
-Route file:
+The route file still exists for future model-provider integration:
 - `app/api/customize-pet/route.ts`
+
+For now, it returns a typed "temporarily unavailable" response and does not call OpenAI.
 
 ---
 
