@@ -152,7 +152,7 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
       tintRgb.b !== defaultTintRgb.b);
 
   const tintFilter = showDynamic && hasCustomTint
-    ? `grayscale(1) sepia(1) saturate(9000%) hue-rotate(${tintHue}deg)`
+    ? `saturate(0.75) sepia(0.35) hue-rotate(${tintHue}deg) saturate(1.35) brightness(1.02)`
     : "none";
 
   const layerIds = appearance.layerIds ?? [];
