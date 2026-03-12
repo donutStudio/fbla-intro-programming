@@ -22,11 +22,11 @@ export function SetupScreen({ showSkip = false, onSkip }: SetupScreenProps) {
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [step, setStep] = useState(1);
   const [appearance, setAppearance] = useState<PetAppearance>({
-    color: "golden",
-    pattern: "solid",
+    color: "rose",
+    eyeStyle: "round",
     accessory: "none",
-    primaryTrait: "wings",
-    secondaryTrait: "none",
+    wingStyle: "none",
+    layerIds: [],
   });
   const createPet = usePetStore((state) => state.createPet);
   const avatarMode = usePetStore((state) => state.avatarMode);

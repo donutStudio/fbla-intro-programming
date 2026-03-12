@@ -21,49 +21,64 @@ Create a `.env.local` file in the project root:
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-- Replace `your_openai_api_key_here` with your real OpenAI key.
-- This is required for **AI pet appearance customization** (dynamic appearance from prompt text).
-
 ## 4) Run the app
 
 ```bash
 pnpm dev
 ```
 
-Then open:
-
-- `http://localhost:3000`
-
-## 5) Build for production (optional)
-
-```bash
-pnpm build
-pnpm start
-```
+Then open `http://localhost:3000`.
 
 ---
 
-## Dynamic Pet Appearance (OpenAI) — quick setup
+## Dynamic avatar setup (emoji + AI layers)
 
-To make pet appearance change based on user prompts:
+Dynamic mode now uses the **same emoji pet**, with:
+- color tinting
+- optional layered images (like sunglasses/hat/scarf)
 
-1. Add `OPENAI_API_KEY` to `.env.local` (see above).
-2. Start the app with `pnpm dev`.
-3. Open the app and go to the AI customization area.
-4. Enter prompts like:
-   - `Make my pet blue`
-   - `Give my pet sparkly eyes`
-   - `Add angel wings`
+### Add your own layer images
 
-If the API key is missing or invalid, the AI customization request will fail.
+1. Put image files in:
+
+```text
+public/pet-layers/
+```
+
+2. Name each file with a stable ID, e.g. `cool-hat.png` → layer ID is `cool-hat`.
+
+3. Add metadata in:
+
+- `lib/pet-layer-config.ts`
+
+That file controls:
+- layer labels/tags (what the LLM uses to choose a layer)
+- layer slot (`head`, `face`, `neck`, `back`, `body`, `extra`)
+- mutually exclusive slots to prevent overlapping conflicts
+
+### Where mutual exclusivity is configured
+
+- `MUTUALLY_EXCLUSIVE_SLOTS` in `lib/pet-layer-config.ts`
+
+By default, only one layer is allowed per exclusive slot, so combinations stay logical.
+
+### How AI chooses layers
+
+The API route:
+- reads files from `public/pet-layers`
+- sends available layers + tags + slots to the LLM
+- enforces slot conflict rules before applying changes
+
+Route file:
+- `app/api/customize-pet/route.ts`
 
 ---
 
 ## Helpful scripts
 
 ```bash
-pnpm dev     # start local dev server
-pnpm build   # build production app
-pnpm start   # run production build
-pnpm lint    # run lint checks
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
 ```

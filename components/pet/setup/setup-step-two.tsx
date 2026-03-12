@@ -69,9 +69,7 @@ export function SetupStepTwo({
       <CardContent>
         <div className="flex justify-center mb-6">
           <div className="relative">
-            <span className="text-8xl animate-bounce-soft">
-              {selectedPet?.emoji}
-            </span>
+            <span className="text-8xl animate-bounce-soft">{selectedPet?.emoji}</span>
             <div className="absolute -top-2 -right-2">
               <Sparkles className="h-6 w-6 text-primary animate-sparkle" />
             </div>
@@ -94,11 +92,9 @@ export function SetupStepTwo({
           <div className="rounded-xl border border-border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Avatar Style
-                </p>
+                <p className="text-sm font-semibold text-foreground">Avatar Style</p>
                 <p className="text-xs text-muted-foreground">
-                  Switch between dynamic art and classic emoji mode
+                  Use emoji mode, or dynamic mode with tint + layered accessories
                 </p>
               </div>
               <Switch
@@ -125,7 +121,7 @@ export function SetupStepTwo({
           {avatarMode === "dynamic" && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Fur color</Label>
+                <Label className="text-xs text-muted-foreground">Tint color</Label>
                 <div className="flex flex-wrap gap-2">
                   {APPEARANCE_OPTIONS.color.map((option) => (
                     <button
@@ -144,113 +140,14 @@ export function SetupStepTwo({
                   ))}
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Pattern</Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.pattern.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.pattern === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() => updateAppearance("pattern", option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Accessory</Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.accessory.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.accessory === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() => updateAppearance("accessory", option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Primary evolution trait (shows from teen)
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.primaryTrait.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.primaryTrait === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() => updateAppearance("primaryTrait", option.key)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Secondary trait (adult bonus)
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {APPEARANCE_OPTIONS.secondaryTrait.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs",
-                        appearance.secondaryTrait === option.key
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                      onClick={() =>
-                        updateAppearance("secondaryTrait", option.key)
-                      }
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 bg-transparent"
-              onClick={onBack}
-            >
+            <Button variant="outline" className="flex-1 bg-transparent" onClick={onBack}>
               Back
             </Button>
-            <Button
-              className="flex-1"
-              size="lg"
-              disabled={!petName.trim()}
-              onClick={onSubmit}
-            >
+            <Button className="flex-1" size="lg" disabled={!petName.trim()} onClick={onSubmit}>
               <Sparkles className="mr-2 h-4 w-4" />
               Start Adventure
             </Button>
