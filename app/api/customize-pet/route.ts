@@ -15,6 +15,8 @@ import {
 
 const imageExt = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg"]);
 
+// gonna add features before presenting at the competition to make it so we can customize the pet with layeres like glasses hats etc using the ai model as well
+
 const getAvailableLayers = async () => {
   const layerDir = path.join(process.cwd(), PET_LAYER_DIRECTORY);
 
