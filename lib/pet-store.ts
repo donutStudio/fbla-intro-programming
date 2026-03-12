@@ -173,6 +173,7 @@ const DEFAULT_APPEARANCE: PetAppearance = {
   eyeStyle: "round",
   accessory: "none",
   wingStyle: "none",
+  layerIds: [],
 };
 
 const recordSnapshot = (pet: Pet, balance: number): StatSnapshot => ({
