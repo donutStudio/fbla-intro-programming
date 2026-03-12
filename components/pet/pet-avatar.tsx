@@ -51,6 +51,28 @@ const SLOT_LAYER_CLASS: Record<PetLayerSlot, string> = {
 
 const DEFAULT_TINT = "#ff6fa1";
 
+const parseHexColor = (value: string) => {
+  const hex = value.replace("#", "").trim();
+
+  if (hex.length === 3) {
+    return {
+      r: Number.parseInt(hex[0] + hex[0], 16),
+      g: Number.parseInt(hex[1] + hex[1], 16),
+      b: Number.parseInt(hex[2] + hex[2], 16),
+    };
+  }
+
+  if (hex.length === 6) {
+    return {
+      r: Number.parseInt(hex.slice(0, 2), 16),
+      g: Number.parseInt(hex.slice(2, 4), 16),
+      b: Number.parseInt(hex.slice(4, 6), 16),
+    };
+  }
+
+  return null;
+};
+
 const cssColorToRgb = (value: string) => {
   if (typeof window === "undefined") return null;
 
@@ -60,7 +82,11 @@ const cssColorToRgb = (value: string) => {
 
   ctx.fillStyle = "#000";
   ctx.fillStyle = value;
-  const normalized = ctx.fillStyle;
+  const normalized = ctx.fillStyle.trim().toLowerCase();
+
+  if (normalized.startsWith("#")) {
+    return parseHexColor(normalized);
+  }
 
   const match = normalized.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
   if (!match) return null;
@@ -117,8 +143,16 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
   const tintColor = tintRgb ? requestedTint : DEFAULT_TINT;
   const tintHue = useMemo(() => (tintRgb ? rgbToHue(tintRgb) : rgbToHue({ r: 255, g: 111, b: 161 })), [tintRgb]);
 
-  const tintFilter = showDynamic
-    ? `grayscale(1) sepia(1) saturate(9000%) hue-rotate(${tintHue}deg) brightness(1.08) contrast(1.22)`
+  const defaultTintRgb = useMemo(() => cssColorToRgb(DEFAULT_TINT), []);
+  const hasCustomTint =
+    !!tintRgb &&
+    !!defaultTintRgb &&
+    (tintRgb.r !== defaultTintRgb.r ||
+      tintRgb.g !== defaultTintRgb.g ||
+      tintRgb.b !== defaultTintRgb.b);
+
+  const tintFilter = showDynamic && hasCustomTint
+    ? `saturate(0.75) sepia(0.35) hue-rotate(${tintHue}deg) saturate(1.35) brightness(1.02)`
     : "none";
 
   const layerIds = appearance.layerIds ?? [];
@@ -178,16 +212,12 @@ export function PetAvatar({ isInteracting }: PetAvatarProps) {
           <span
             className={cn(
               "absolute inset-0 z-30 flex items-center justify-center text-8xl md:text-9xl select-none transition-transform duration-300",
-              showDynamic && "mix-blend-multiply",
               mood === "tired" && "opacity-70",
               mood === "sick" && "grayscale"
             )}
             style={{
               filter: tintFilter,
-              color: showDynamic ? tintColor : "inherit",
-              textShadow: showDynamic
-                ? `0 0 10px ${tintColor}, 0 0 24px ${tintColor}`
-                : "none",
+              color: showDynamic && hasCustomTint ? tintColor : "inherit",
             }}
           >
             {emoji}
