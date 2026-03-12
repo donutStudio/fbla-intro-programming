@@ -14,5 +14,5 @@ export interface CustomizePetResponse {
   customizationAvailable: boolean;
 }
 
-export const CUSTOMIZATION_DISABLED_MESSAGE =
-  "Natural-language pet customization is temporarily unavailable.";
+export const CUSTOMIZATION_ERROR_MESSAGE =
+  "Could not process your customization request right now. Please try again.";
