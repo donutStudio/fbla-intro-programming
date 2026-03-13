@@ -30,12 +30,12 @@ Then open `http://localhost:3000`.
 ## Credits
 
 Languages, Libraries and Frameworks used:
-- TypeScript ([text](https://www.typescriptlang.org/)), superset language of JavaScript but with strongly typed system.
-- React ([text](https://react.dev/)) JavaScript libraries for making UIs based on components
-- Tailwind CSS ([text](https://www.typescriptlang.org/)) CSS framework that makes styling process faster
-- Next.js ([text](https://nextjs.org/)) React framework with faster developer experience and performance
-- Zustand ([text](https://zustand-demo.pmnd.rs/)) Library that allows for easy state management in React apps
-- OpenAI API ([text](https://openai.com/api/)) API by OpenAI which allows you to use their models in your applications
+- TypeScript ([typescriptlang.org](https://www.typescriptlang.org/)), superset language of JavaScript but with strongly typed system.
+- React ([react.dev](https://react.dev/)) JavaScript libraries for making UIs based on components
+- Tailwind CSS ([tailwindcss.com](https://tailwindcss.com/)) CSS framework that makes styling process faster
+- Next.js ([nextjs.org](https://nextjs.org/)) React framework with faster developer experience and performance
+- Zustand ([zustand-demo.pmnd.rs](https://zustand-demo.pmnd.rs/)) Library that allows for easy state management in React apps
+- OpenAI API ([openai.com/api](https://openai.com/api/)) API by OpenAI which allows you to use their models in your applications
 
 ## Helpful scripts
 
