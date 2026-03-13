@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePetStore } from "@/lib/pet-store";
-import { useAccountStore } from "@/lib/account-store";
 import { GameHeader } from "./game-header";
-import { GameTabs } from "./game-tabs";
+import { CareTab } from "./care-tab";
+import { Button } from "@/components/ui/button";
 
-export function GameScreen() {
+type GameScreenProps = {
+  gameStarted: boolean;
+};
+
+export function GameScreen({ gameStarted }: GameScreenProps) {
   const {
     pet,
+    createPet,
     updatePetStats,
     resetGame,
     balance,
@@ -17,34 +22,31 @@ export function GameScreen() {
     demoMode,
     setDemoMode,
   } = usePetStore();
-  const currentUserId = useAccountStore((state) => state.currentUserId);
-  const currentUser = useAccountStore((state) =>
-    currentUserId ? state.accounts[currentUserId] : null
-  );
-  const logout = useAccountStore((state) => state.logout);
-  const showManager = useAccountStore((state) => state.showManager);
-  const showFriends = useAccountStore((state) => state.showFriends);
-  // This flag is only for transient visual state (animations/highlights).
+
   const [isInteracting, setIsInteracting] = useState(false);
-  const [activeTab, setActiveTab] = useState("care");
 
   useEffect(() => {
-    // Refresh once immediately, then continue on a steady interval.
+    if (!gameStarted || !pet) return;
+
     updatePetStats();
-    // Demo mode ticks faster so stat decay/recovery changes are easier to observe.
     const interval = setInterval(updatePetStats, demoMode ? 10000 : 45000);
     return () => clearInterval(interval);
-  }, [updatePetStats, demoMode]);
+  }, [gameStarted, pet, updatePetStats, demoMode]);
 
   const handleInteraction = () => {
-    // Short-lived flag used for UI animation feedback.
     setIsInteracting(true);
     setTimeout(() => setIsInteracting(false), 1500);
-    // setTimeout(() => setIsInteracting(false), 800); // used while tuning animation speed
   };
 
-  // Guard against a brief render while pet data is being initialized/restored.
-  if (!pet) return null;
+  const handleStart = () => {
+    createPet("Buddy", "dog", {
+      color: "#ff6fa1",
+      eyeStyle: "round",
+      accessory: "none",
+      wingStyle: "none",
+      layerIds: [],
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
@@ -55,19 +57,20 @@ export function GameScreen() {
         demoMode={demoMode}
         onToggleDemoMode={setDemoMode}
         onReset={resetGame}
-        username={currentUser?.username}
-        onLogout={logout}
-        onManagePets={showManager}
-        onManageFriends={showFriends}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6">
-        <GameTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isInteracting={isInteracting}
-          onInteraction={handleInteraction}
-        />
+        {!gameStarted || !pet ? (
+          <div className="bg-card rounded-2xl p-10 shadow-sm border border-border text-center space-y-4">
+            <h1 className="text-3xl font-bold">PetPal Alpha</h1>
+            <p className="text-muted-foreground">
+              Super early build. One pet. One screen. Feed your pet.
+            </p>
+            <Button onClick={handleStart}>Start</Button>
+          </div>
+        ) : (
+          <CareTab isInteracting={isInteracting} onInteraction={handleInteraction} />
+        )}
       </main>
     </div>
   );
