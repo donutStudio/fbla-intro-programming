@@ -22,9 +22,11 @@ export const TOY_OPTIONS = {
 export const CLEANING_COST = 5;
 export const VET_COST = 50;
 
+// Keep all core stats in the expected 0-100 range.
 const clamp = (value: number, min = 0, max = 100) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
+// Evolution is time-based and independent from current mood/stats.
 export const getEvolution = (daysPassed: number): PetEvolution => {
   if (daysPassed >= 5) return "adult";
   if (daysPassed >= 2) return "teen";
@@ -32,6 +34,7 @@ export const getEvolution = (daysPassed: number): PetEvolution => {
 };
 
 export const getMoodReasons = (pet: Pet): MoodReason[] => {
+  // Return highest-severity drivers first so the UI can show actionable items quickly.
   const reasons: MoodReason[] = [];
   if (pet.hunger < 40) {
     reasons.push({
@@ -73,6 +76,7 @@ export const getMoodReasons = (pet: Pet): MoodReason[] => {
 };
 
 export const getMoodState = (pet: Pet, previousMood?: PetMood): PetMood => {
+  // Order matters here: urgent health states should win first.
   const { hunger, happiness, energy, health, cleanliness } = pet;
 
   if (health < 25) return "sick";
@@ -95,6 +99,7 @@ export const applyDecay = (
   demoScale: number,
   difficultyScale = 1
 ) => {
+  // Demo and difficulty multipliers share one timeline scale.
   const scaledHours = hoursPassed * demoScale * difficultyScale;
   const hunger = clamp(pet.hunger - scaledHours * 2.4);
   const happiness = clamp(pet.happiness - scaledHours * 1.5);
@@ -143,6 +148,7 @@ export const applyDecay = (
   }
 
   if (happiness > 85 && Math.random() < 0.1) {
+    // Tiny random reward to keep good care feeling fun.
     updatedPet.happiness = clamp(updatedPet.happiness + 5);
     events.push({
       id: `event-${Date.now()}-toy`,
@@ -156,6 +162,7 @@ export const applyDecay = (
 };
 
 export const applyFeed = (pet: Pet, foodType: keyof typeof FOOD_OPTIONS) => {
+  // Feeding can also slightly improve mood if the pet was already low.
   const option = FOOD_OPTIONS[foodType];
   const hungerBoost = option.hunger + (pet.energy < 30 ? 5 : 0);
   const happinessBoost = option.happiness + (pet.happiness < 40 ? 5 : 0);
@@ -170,6 +177,7 @@ export const applyFeed = (pet: Pet, foodType: keyof typeof FOOD_OPTIONS) => {
 
 export const applyPlay = (pet: Pet, toyType: keyof typeof TOY_OPTIONS) => {
   const option = TOY_OPTIONS[toyType];
+  // const debugEnergyPenalty = option.energy;
   const energyPenalty = pet.energy < 35 ? option.energy * 0.6 : option.energy;
   const happinessBoost = pet.energy < 35 ? option.happiness * 0.7 : option.happiness;
 
@@ -206,6 +214,7 @@ export const applyVet = (pet: Pet) => ({
 });
 
 export const buildRecommendations = (pet: Pet): Recommendation[] => {
+  // Keep this list short and prioritized for the action panel.
   const recs: Recommendation[] = [];
   if (pet.hunger < 40) {
     recs.push({

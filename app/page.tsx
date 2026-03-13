@@ -11,6 +11,7 @@ import { useAccountStore } from "@/lib/account-store";
 import { useEffect, useState } from "react";
 
 export default function Home() {
+  // Pull scoped slices from Zustand to avoid broad rerenders in the shell component.
   const gameStarted = usePetStore((state) => state.gameStarted);
   const currentUserId = useAccountStore((state) => state.currentUserId);
   const account = useAccountStore((state) =>
@@ -25,7 +26,9 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Wait until the client mounts before checking persisted store state.
     setMounted(true);
+    // console.debug("Home mounted");
   }, []);
 
   // Prevent hydration mismatch
@@ -40,11 +43,13 @@ export default function Home() {
     );
   }
 
+  // Auth gate: nothing else should render until we know the active account.
   if (!currentUserId) {
     return <AuthScreen />;
   }
 
   if (showSetup) {
+    // Let brand-new users skip onboarding if they have no pets yet.
     const showSkip =
       !!account && !account.hasCompletedOnboarding && account.pets.length === 0;
     return (
@@ -55,6 +60,7 @@ export default function Home() {
     );
   }
 
+  // Route to account-level views before entering the active pet gameplay flow.
   if (showFriendsManager) {
     return (
       <>
@@ -65,6 +71,7 @@ export default function Home() {
   }
 
   if (showPetManager || !account?.activePetId) {
+    // Fall back to manager when there is no currently selected pet.
     return (
       <>
         <AccountSync />
@@ -73,6 +80,7 @@ export default function Home() {
     );
   }
 
+  // Normal path: keep account state synced while switching between setup and game.
   return (
     <>
       <AccountSync />

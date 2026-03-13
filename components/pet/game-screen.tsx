@@ -24,20 +24,26 @@ export function GameScreen() {
   const logout = useAccountStore((state) => state.logout);
   const showManager = useAccountStore((state) => state.showManager);
   const showFriends = useAccountStore((state) => state.showFriends);
+  // This flag is only for transient visual state (animations/highlights).
   const [isInteracting, setIsInteracting] = useState(false);
   const [activeTab, setActiveTab] = useState("care");
 
   useEffect(() => {
+    // Refresh once immediately, then continue on a steady interval.
     updatePetStats();
+    // Demo mode ticks faster so stat decay/recovery changes are easier to observe.
     const interval = setInterval(updatePetStats, demoMode ? 10000 : 45000);
     return () => clearInterval(interval);
   }, [updatePetStats, demoMode]);
 
   const handleInteraction = () => {
+    // Short-lived flag used for UI animation feedback.
     setIsInteracting(true);
     setTimeout(() => setIsInteracting(false), 1500);
+    // setTimeout(() => setIsInteracting(false), 800); // used while tuning animation speed
   };
 
+  // Guard against a brief render while pet data is being initialized/restored.
   if (!pet) return null;
 
   return (
