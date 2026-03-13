@@ -7,6 +7,7 @@ import type {
   Recommendation,
 } from "@/lib/domain/types";
 
+// use nested object map data structure opposed to single variables
 export const FOOD_OPTIONS = {
   basic: { cost: 5, hunger: 25, happiness: 5, label: "Basic" },
   premium: { cost: 15, hunger: 40, happiness: 15, label: "Premium" },
@@ -22,11 +23,11 @@ export const TOY_OPTIONS = {
 export const CLEANING_COST = 5;
 export const VET_COST = 50;
 
-// Keep all core stats in the expected 0-100 range.
+// keep main stats in standard 0-100 range (input validation).
 const clamp = (value: number, min = 0, max = 100) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
-// Evolution is time-based and independent from current mood/stats.
+// ensure evolution is based on time (independent from pet stats)
 export const getEvolution = (daysPassed: number): PetEvolution => {
   if (daysPassed >= 5) return "adult";
   if (daysPassed >= 2) return "teen";

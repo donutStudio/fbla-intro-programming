@@ -1,23 +1,25 @@
 # PetPal
 
-A simple virtual pet app built with Next.js.
+Virtual pet simulator web app with extensive financial management and social features.
 
-## 1) Requirements
+## Required Libraries
 
 - Node.js 18+
 - pnpm (recommended) or npm
 
-## 2) Install
+## Install
 
 ```bash
 pnpm install
 ```
 
-## 3) Environment variables
+## Environment variables
 
-No required environment variables for local development.
+Create a `.env.local` file in the root directory, and put 
+```OPENAI_API_KEY=<your_api_key_here>```
+to use intelligent features.
 
-## 4) Run the app
+## Running the app
 
 ```bash
 pnpm dev
@@ -25,47 +27,15 @@ pnpm dev
 
 Then open `http://localhost:3000`.
 
----
+## Credits
 
-## Dynamic avatar setup (emoji + layers)
-
-Dynamic mode uses the **same emoji pet**, with:
-- color tinting
-- optional layered images (like sunglasses/hat/scarf)
-
-### Add your own layer images
-
-1. Put image files in:
-
-```text
-public/pet-layers/
-```
-
-2. Name each file with a stable ID, e.g. `cool-hat.png` → layer ID is `cool-hat`.
-
-3. Add metadata in:
-
-- `lib/pet-layer-config.ts`
-
-That file controls:
-- layer labels/tags
-- layer slot (`head`, `face`, `neck`, `back`, `body`, `extra`)
-- mutually exclusive slots to prevent overlapping conflicts
-
-### Where mutual exclusivity is configured
-
-- `MUTUALLY_EXCLUSIVE_SLOTS` in `lib/pet-layer-config.ts`
-
-By default, only one layer is allowed per exclusive slot, so combinations stay logical.
-
-### Customizer route status
-
-The route file still exists for future model-provider integration:
-- `app/api/customize-pet/route.ts`
-
-For now, it returns a typed "temporarily unavailable" response and does not call OpenAI.
-
----
+Languages, Libraries and Frameworks used:
+- TypeScript ([text](https://www.typescriptlang.org/)), superset language of JavaScript but with strongly typed system.
+- React ([text](https://react.dev/)) JavaScript libraries for making UIs based on components
+- Tailwind CSS ([text](https://www.typescriptlang.org/)) CSS framework that makes styling process faster
+- Next.js ([text](https://nextjs.org/)) React framework with faster developer experience and performance
+- Zustand ([text](https://zustand-demo.pmnd.rs/)) Library that allows for easy state management in React apps
+- OpenAI API ([text](https://openai.com/api/)) API by OpenAI which allows you to use their models in your applications
 
 ## Helpful scripts
 
