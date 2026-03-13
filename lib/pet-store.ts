@@ -124,10 +124,12 @@ const DEFAULT_TASKS: Omit<Task, "id" | "completed" | "createdAt" | "availableAt"
 ];
 
 const getTaskDelayMs = (reward: number) => {
+  // Higher reward tasks wait longer before they can be completed.
   const baseDelay = reward * 1000;
   return Math.min(60000, Math.max(2000, baseDelay));
 };
 
+// Normalize task shape so generated and restored tasks match.
 const buildTask = (
   task: Omit<Task, "id" | "completed" | "createdAt" | "availableAt" | "cooldownMs">,
   id: string
@@ -145,6 +147,7 @@ const buildTask = (
 };
 
 const buildTaskList = () =>
+  // Seed default tasks with deterministic ids so first-run state is stable.
   DEFAULT_TASKS.map((task, index) => buildTask(task, `task-${index}`));
 
 export type PetGameSnapshot = GameState;
@@ -177,6 +180,7 @@ const DEFAULT_APPEARANCE: PetAppearance = {
 };
 
 const recordSnapshot = (pet: Pet, balance: number): StatSnapshot => ({
+  // Snapshot ids are timestamp-based since they are append-only history records.
   id: `snap-${Date.now()}`,
   timestamp: Date.now(),
   hunger: pet.hunger,
@@ -195,6 +199,7 @@ export const usePetStore = create<PetStore>()(
 
       createPet: (name: string, type: PetType, appearance: PetAppearance) => {
         const demoMode = get().demoMode;
+        // const debugStartBalance = get().balance;
         const startingBalance = demoMode ? 250 : get().balance;
         const now = Date.now();
         set({
@@ -222,6 +227,7 @@ export const usePetStore = create<PetStore>()(
       },
 
       resetGame: () => {
+        // Preserve display preferences when resetting core gameplay progress.
         set({
           ...buildInitialState(),
           avatarMode: get().avatarMode,
@@ -400,6 +406,7 @@ export const usePetStore = create<PetStore>()(
 
       completeTask: (taskId: string) => {
         const state = get();
+        // Task completion uses availableAt instead of completed flag to enforce cooldown.
         const task = state.tasks.find((t) => t.id === taskId);
         if (!task || task.completed) {
           return { ok: false, message: "Task already completed." };
@@ -470,6 +477,7 @@ export const usePetStore = create<PetStore>()(
 
       updatePetStats: () => {
         const state = get();
+        // Skip work when no active pet exists (fresh account state).
         if (!state.pet) return;
 
         const now = Date.now();
@@ -543,6 +551,7 @@ export const usePetStore = create<PetStore>()(
       },
 
       getSnapshot: () => {
+        // Serialize explicit fields so snapshot format stays intentional.
         const {
           pet,
           balance,
@@ -584,6 +593,7 @@ export const usePetStore = create<PetStore>()(
           return;
         }
 
+        // Backfill legacy snapshots that were saved before cooldown fields existed.
         const normalizedTasks =
           snapshot.tasks?.map((task) => {
             const cooldownMs = task.cooldownMs ?? getTaskDelayMs(task.reward);
