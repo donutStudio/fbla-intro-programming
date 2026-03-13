@@ -1,8 +1,6 @@
 import { PetAvatar } from "./pet-avatar";
 import { PetStats } from "./pet-stats";
 import { PetActions } from "./pet-actions";
-import { FinancePanel } from "./finance-panel";
-import { PetInsights } from "./pet-insights";
 
 type CareTabProps = {
   isInteracting: boolean;
@@ -19,13 +17,6 @@ export function CareTab({ isInteracting, onInteraction }: CareTabProps) {
         <div className="grid lg:grid-cols-2 gap-4">
           <PetStats />
           <PetActions onInteraction={onInteraction} />
-          <PetInsights />
-        </div>
-      </div>
-
-      <div className="hidden md:block">
-        <div className="sticky top-24">
-          <FinancePanel />
         </div>
       </div>
     </div>
