@@ -16,7 +16,9 @@ pnpm install
 ## Environment variables
 
 Create a `.env.local` file in the root directory, and put 
-```OPENAI_API_KEY=<your_api_key_here>```
+```
+OPENAI_API_KEY=<your_api_key_here>
+```
 to use intelligent features.
 
 ## Running the app
